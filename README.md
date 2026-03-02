@@ -1,395 +1,294 @@
 # Matrix Second Brain
 
-A Matrix bot that turns a Matrix Space into a shared personal productivity system based on the Getting Things Done (GTD) methodology. Drop any thought, task, shopping item, or note into Matrix and the bot classifies, organizes, and reminds you at the right time and place.
+A self-hosted Matrix bot that turns a Matrix Space into a shared GTD productivity system. Send any message to your inbox room — the bot classifies it, extracts structured fields using an LLM, and writes a record to PostgreSQL. Location sharing in Element triggers shopping alerts when you're near a relevant store.
 
-## Key Features
+## Features
 
-- **Natural language capture** -- send any message and the bot classifies it into tasks, events, shopping items, notes, contacts, projects, or reference material
-- **GTD workflow** -- inbox capture, next-action tracking, waiting-for follow-ups, someday/maybe lists, weekly reviews
-- **Location-aware alerts** -- get notified when you are near a store that has pending shopping items
-- **Shared and personal** -- supports multiple users with shared and personal visibility on all items
-- **Daily and weekly digests** -- automated cron summaries of tasks due, events today, overdue follow-ups, and stale projects
-- **Zettelkasten notes** -- linked note system with auto-generated IDs
-- **LLM-powered** -- uses AWS Bedrock (Claude) or direct Anthropic API for classification and extraction
+- **Natural language capture** — send anything; the bot figures out whether it's a task, event, shopping item, note, project, contact, resource, or waiting-for
+- **GTD workflow** — inbox → classify → project/area/context tagging, next-action tracking, weekly review
+- **Location alerts** — get notified when you're within configurable meters of a place with pending shopping items (uses Matrix MSC3488 live location, no third-party services)
+- **Multi-user** — shared and personal ownership per record; each user gets a private `#inbox-<name>` room
+- **Daily digest** — morning summary of tasks due, events, and follow-ups sent to a shared `#digest` room
+- **Weekly review** — Monday summary of stale projects and overdue items
+- **Zettelkasten notes** — linked note system with auto-generated YYYYMMDDHHMMSS IDs
+- **Pluggable LLM** — AWS Bedrock (Claude), direct Anthropic API, or a keyword-based mock for local dev with no API costs
+
+## How It Works
+
+```
+User sends message to #inbox-alice
+        ↓
+Bot asks clarifying question if intent is ambiguous
+        ↓
+LLM classifies → one of 10 GTD categories
+        ↓
+LLM enriches → fills due dates, urgency, matched contacts, etc.
+        ↓
+Record inserted into PostgreSQL
+        ↓
+Bot replies in thread: "✅ Saved as task: Call dentist"
+        ↓
+If category=project → bot also creates a #project-<name> Matrix room
+```
+
+## Tech Stack
+
+- **Runtime**: Node.js 20, TypeScript
+- **Matrix**: [`matrix-bot-sdk`](https://github.com/turt2live/matrix-bot-sdk)
+- **Database**: PostgreSQL 16 + [Drizzle ORM](https://orm.drizzle.team/)
+- **LLM**: AWS Bedrock (Anthropic Claude) or Anthropic API directly
+- **Validation**: Zod
+- **Scheduler**: node-cron
+- **Dev environment**: Docker Compose (local Synapse + Postgres)
 
 ## Prerequisites
 
-| Requirement | Version |
-|---|---|
-| Node.js | 20+ |
-| Docker & Docker Compose | Latest |
-| PostgreSQL | 16+ (provided via Docker for dev) |
-| Matrix homeserver | Synapse recommended (provided via Docker for dev) |
+- Docker and Docker Compose
+- A running Matrix homeserver (Synapse recommended; one is included in the dev stack)
+- PostgreSQL 16+ (included in the dev stack)
+- One of: AWS account with Bedrock access, Anthropic API key, or `LLM_PROVIDER=mock` for local dev
 
-## AWS Bedrock Setup (One-Time)
+## Quick Start (Local Dev)
 
-If using `LLM_PROVIDER=bedrock`, create an IAM user with the following policy:
+Everything runs locally in Docker — no external services needed when using the mock LLM.
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ],
-      "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.*"
-    }
-  ]
-}
-```
-
-1. Go to **IAM > Users > Create User** in the AWS Console.
-2. Attach the policy above (create it as a custom policy first).
-3. Under **Security credentials**, create an access key (choose "Application running outside AWS").
-4. Save the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` for your `.env` file.
-5. In the Bedrock console, go to **Model access** and request access to Anthropic Claude models.
-
-If using `LLM_PROVIDER=anthropic`, you only need an `ANTHROPIC_API_KEY` from console.anthropic.com.
-
-For local development, set `LLM_PROVIDER=mock` to skip external API calls entirely.
-
-## Register Matrix Bot Account
-
-On your Synapse homeserver, register a bot user:
+### 1. Generate Synapse config
 
 ```bash
-# Using the Synapse admin API (run on the server)
-register_new_matrix_user -c /data/homeserver.yaml http://localhost:8008 \
-  --user secondbrain \
-  --password YOUR_BOT_PASSWORD \
-  --no-admin
-
-# Get an access token by logging in
-curl -X POST http://localhost:8008/_matrix/client/v3/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "m.login.password",
-    "user": "secondbrain",
-    "password": "YOUR_BOT_PASSWORD"
-  }'
+docker run --rm \
+  -e SYNAPSE_SERVER_NAME=localhost \
+  -e SYNAPSE_REPORT_STATS=no \
+  -v "$(pwd)/dev/synapse-data:/data" \
+  matrixdotorg/synapse:latest generate
 ```
 
-Save the `access_token` from the response -- this goes into `MATRIX_BOT_ACCESS_TOKEN`.
+Add the following to `dev/synapse-data/homeserver.yaml` (before the final comment line):
 
-For local dev with docker-compose.dev.yml, wait for Synapse to start, then run the registration commands against `http://localhost:8008`.
+```yaml
+enable_registration: true
+enable_registration_without_verification: true
+suppress_key_server_warning: true
+```
 
-## Local Development
-
-### 1. Start infrastructure
+### 2. Start infrastructure
 
 ```bash
 docker-compose -f docker-compose.dev.yml up -d synapse postgres
 ```
 
-Wait for both services to be healthy:
+Wait for both to be healthy:
 
 ```bash
 docker-compose -f docker-compose.dev.yml ps
 ```
 
-### 2. Register users on local Synapse
+### 3. Register Matrix accounts
 
 ```bash
-# Register the bot
-docker-compose -f docker-compose.dev.yml exec synapse \
-  register_new_matrix_user -c /data/homeserver.yaml http://localhost:8008 \
-  --user secondbrain --password botpass --no-admin
+# Register the bot account
+docker exec matrix-second-brain-synapse-1 \
+  register_new_matrix_user -u secondbrain -p <password> -a \
+  -c /data/homeserver.yaml http://localhost:8008
 
-# Register a test user
-docker-compose -f docker-compose.dev.yml exec synapse \
-  register_new_matrix_user -c /data/homeserver.yaml http://localhost:8008 \
-  --user alice --password alicepass --no-admin
+# Register your user account
+docker exec matrix-second-brain-synapse-1 \
+  register_new_matrix_user -u alice -p <password> --no-admin \
+  -c /data/homeserver.yaml http://localhost:8008
 
-# Get bot access token
-curl -s -X POST http://localhost:8008/_matrix/client/v3/login \
-  -H "Content-Type: application/json" \
-  -d '{"type":"m.login.password","user":"secondbrain","password":"botpass"}' \
-  | jq -r '.access_token'
+# Get the bot's access token
+curl -sf -X POST http://localhost:8008/_matrix/client/v3/login \
+  -H 'Content-Type: application/json' \
+  -d '{"type":"m.login.password","user":"secondbrain","password":"<password>"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])"
 ```
 
-Update the token in `.env.dev`.
-
-### 3. Install dependencies and run migrations
+### 4. Configure environment
 
 ```bash
-npm install
-npm run db:migrate
+cp .env.example .env.dev
 ```
 
-### 4. Start the bot
+Edit `.env.dev`:
+
+```env
+MATRIX_HOMESERVER_URL=http://synapse:8008
+MATRIX_BOT_USER_ID=@secondbrain:localhost
+MATRIX_BOT_ACCESS_TOKEN=<token from step 3>
+ADMIN_MATRIX_ID=@alice:localhost
+
+DATABASE_URL=postgresql://postgres:devpassword@postgres:5432/secondbrain_dev
+
+LLM_PROVIDER=mock   # no API key needed
+```
+
+### 5. Build and start the bot
 
 ```bash
-npm run dev
+docker-compose -f docker-compose.dev.yml up -d bot
+docker-compose -f docker-compose.dev.yml logs -f bot
 ```
 
-Or run everything together:
-
-```bash
-docker-compose -f docker-compose.dev.yml up --build
+You should see:
 ```
+✅ Matrix Second Brain is running!
+   Bot: @secondbrain:localhost
+   Admin: @alice:localhost
+   LLM: mock
+```
+
+### 6. Run the setup wizard
+
+Using [Element Web](https://app.element.io) pointed at `http://localhost:8008`, or any Matrix client:
+
+1. DM `@secondbrain:localhost`
+2. Send `!setup`
+3. Follow the prompts — the bot will create a Space with inbox and digest rooms
 
 ## Production Deployment
 
-### 1. Provision a server
+### LLM: AWS Bedrock
 
-Any Linux VM with Docker installed (e.g., AWS EC2 t3.small, DigitalOcean droplet).
+1. In the AWS Console, go to **Bedrock → Model access** and request access to Anthropic Claude models (~5 minutes for approval).
+2. Create an IAM user with this policy:
 
-### 2. Set up environment
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+    "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.*"
+  }]
+}
+```
+
+3. Generate access keys for the IAM user → add to `.env`.
+
+### LLM: Anthropic API
+
+Set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=sk-ant-...`. No AWS account needed.
+
+### Deploy
 
 ```bash
 ssh your-server
-git clone <your-repo-url> /opt/matrix-second-brain
+git clone <repo-url> /opt/matrix-second-brain
 cd /opt/matrix-second-brain
-```
-
-Create `.env` with production values:
-
-```bash
-cat > .env << 'EOF'
-MATRIX_HOMESERVER_URL=https://matrix.yourdomain.com
-MATRIX_BOT_USER_ID=@secondbrain:yourdomain.com
-MATRIX_BOT_ACCESS_TOKEN=syt_REAL_TOKEN_HERE
-ADMIN_MATRIX_ID=@you:yourdomain.com
-
-DATABASE_URL=postgresql://user:password@db-host:5432/secondbrain
-
-LLM_PROVIDER=bedrock
-AWS_ACCESS_KEY_ID=AKIA...
-AWS_SECRET_ACCESS_KEY=...
-AWS_REGION=us-east-1
-
-CLASSIFICATION_CONFIDENCE_THRESHOLD=0.7
-ALERT_RADIUS_METERS=500
-LOCATION_COOLDOWN_MINUTES=120
-EOF
-```
-
-### 3. Deploy
-
-```bash
+cp .env.example .env
+# edit .env with production values
 docker-compose up -d --build
 docker-compose logs -f bot
 ```
 
-The bot auto-runs database migrations on startup.
+The bot runs migrations automatically on startup and connects to your existing Synapse and PostgreSQL instances.
 
-## First-Run Wizard
+### Environment variables
 
-When the admin user sends the first message, the bot starts a setup wizard:
+| Variable | Required | Description |
+|---|---|---|
+| `MATRIX_HOMESERVER_URL` | Yes | Full URL of your Matrix homeserver |
+| `MATRIX_BOT_USER_ID` | Yes | Bot's Matrix ID, e.g. `@secondbrain:yourdomain.com` |
+| `MATRIX_BOT_ACCESS_TOKEN` | Yes | Bot's access token (from `/login`) |
+| `ADMIN_MATRIX_ID` | Yes | Matrix ID allowed to run `!setup` |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `LLM_PROVIDER` | Yes | `bedrock`, `anthropic`, or `mock` |
+| `AWS_ACCESS_KEY_ID` | Bedrock only | IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | Bedrock only | IAM secret key |
+| `AWS_REGION` | Bedrock only | Default: `us-east-1` |
+| `ANTHROPIC_API_KEY` | Anthropic only | API key from console.anthropic.com |
+| `CLASSIFICATION_CONFIDENCE_THRESHOLD` | No | Default: `0.7` |
+| `ALERT_RADIUS_METERS` | No | Default: `500` |
+| `LOCATION_COOLDOWN_MINUTES` | No | Default: `120` |
 
-```
-You:    !setup
-Bot:    Welcome to Second Brain setup! Let's configure your space.
-        What would you like to name your space? (e.g., "Our Second Brain")
+## Capture Categories
 
-You:    Family Brain
-Bot:    Created space "Family Brain"!
-        Who else should have access? Send Matrix IDs separated by commas,
-        or "skip" for just you.
+The bot classifies free-text messages into these GTD+PARA categories:
 
-You:    @bob:matrix.org
-Bot:    Invited @bob:matrix.org.
-        Creating rooms... Done!
-        - #digest (daily/weekly summaries)
-        - #inbox-alice (your personal inbox)
-        - #inbox-bob (bob's personal inbox)
-        Setup complete! Send any message to your inbox to start capturing.
-```
-
-## Using the Bot
-
-Send messages to your inbox room. The bot classifies them automatically.
-
-### Task capture
-
-```
-You:    Buy anniversary gift for Sarah by March 15 -- high priority
-Bot:    Captured as TASK:
-        Title: Buy anniversary gift for Sarah
-        Priority: high | Due: Mar 15 | Context: errands
-        Owner: alice
-```
-
-### Shopping items
-
-```
-You:    Need milk, eggs, and bread from Whole Foods
-Bot:    Captured as SHOPPING:
-        - milk (Whole Foods)
-        - eggs (Whole Foods)
-        - bread (Whole Foods)
-        Linked to place: Whole Foods Market
-```
-
-### Events
-
-```
-You:    Dinner with the Johnsons next Friday at 7pm at Olive Garden
-Bot:    Captured as EVENT:
-        Title: Dinner with the Johnsons
-        Date: Fri Mar 7, 7:00 PM | Location: Olive Garden
-        Contact: The Johnsons
-```
-
-### Notes
-
-```
-You:    Note: The best way to learn is to teach others. This connects
-        to my thinking about knowledge management.
-Bot:    Captured as NOTE:
-        ID: 2a3b | Title: Learning through teaching
-        Tags: #learning #knowledge-management
-        Linked to: 1f2e (knowledge management systems)
-```
-
-### Location alerts
-
-When you share your location (m.location event) near a store with pending items:
-
-```
-Bot:    Hey! You're near Whole Foods (~150m). You have items on your list there:
-          - milk
-          - eggs
-          - bread — added by bob
-        Worth a stop if you have time!
-```
-
-### Commands
-
-| Command | Description |
+| Category | Example message |
 |---|---|
-| `!setup` | Run the first-time setup wizard |
-| `!tasks` | List pending tasks |
-| `!tasks @home` | Filter tasks by context |
-| `!shopping` | List pending shopping items |
-| `!projects` | List active projects |
-| `!review` | Trigger a weekly review now |
-| `!help` | Show all available commands |
+| `task` | "todo: call dentist to reschedule" |
+| `project` | "Start a project: redesign home office" |
+| `waiting_for` | "Follow up with landlord about lease next month" |
+| `event` | "Meeting with accountant Thursday at 2pm" |
+| `contact` | "Met Sarah Chen at the conference — she works at Acme Corp" |
+| `resource` | "Read this: https://example.com/article" |
+| `note` | "Note: the key insight about GTD is capture first, process later" |
+| `shopping` | "Buy a standing desk lamp for the office" |
+| `someday_maybe` | "Someday: learn to sail" |
+| `area` | "Area: Health — maintain consistent sleep schedule" |
+
+When the bot creates a `project` record, it also creates a Matrix room (`#project-<name>`) in the Space.
+
+## Location Alerts
+
+Share your live location in Element (Attachment → Location → Share live location). The bot receives `m.location` events and runs a Haversine distance check against all places in the `places` table. If you're within `ALERT_RADIUS_METERS` of a place that has pending shopping items, it sends an alert to your inbox room.
+
+To add a place, insert a row into the `places` table directly in PostgreSQL — there is no bot command for this yet.
+
+Alerts are rate-limited per user per place (default: once every 2 hours) via the `location_cooldowns` table.
+
+## Database Access
+
+Connect any PostgreSQL client to view and query your data.
+
+```bash
+# psql (local dev)
+docker exec -it matrix-second-brain-postgres-1 psql -U postgres secondbrain_dev
+
+# Drizzle Studio (browser UI)
+npm run db:studio
+```
 
 ## Running Tests
 
 ```bash
-# Unit tests
+# Unit tests (no network, no DB)
 npm test
 
-# Integration tests (requires running Postgres)
+# Integration tests (requires docker-compose.dev.yml running)
 npm run test:integration
-
-# Location alert test (outputs curl commands for manual testing)
-npm run test:location
-```
-
-## Database Access
-
-### psql (command line)
-
-```bash
-# Local dev
-psql postgresql://postgres:devpassword@localhost:5432/secondbrain_dev
-
-# Via Docker
-docker-compose -f docker-compose.dev.yml exec postgres \
-  psql -U postgres secondbrain_dev
-```
-
-### Drizzle Studio (browser-based)
-
-```bash
-npm run db:studio
-```
-
-Opens a browser UI at `https://local.drizzle.studio` for inspecting tables and running queries.
-
-### GUI tools (TablePlus, pgAdmin, etc.)
-
-| Field | Value |
-|---|---|
-| Host | `localhost` |
-| Port | `5432` |
-| Database | `secondbrain_dev` |
-| User | `postgres` |
-| Password | `devpassword` |
-
-## Architecture
-
-```
-src/
-├── ai/               # LLM integration
-│   ├── providers/     # Bedrock, Anthropic, and mock LLM providers
-│   ├── prompts/       # System prompts for classification and extraction
-│   ├── pipeline.ts    # Main classify-then-extract pipeline
-│   └── context.ts     # Conversation context builder for richer LLM calls
-├── bot/               # Matrix bot entry point
-│   ├── index.ts       # Bot startup, Matrix client init, cron scheduling
-│   ├── matrixClient.ts# Matrix SDK wrapper with send/reply helpers
-│   ├── wizard.ts      # First-run !setup wizard flow
-│   └── handlers/      # Message event handlers by type
-├── config.ts          # Environment and config.yaml loading with Zod
-├── cron/              # Scheduled jobs
-│   ├── daily.ts       # Daily digest (tasks, events, follow-ups)
-│   ├── weekly.ts      # Weekly review (stale projects, overdue tasks)
-│   └── enrich.ts      # Background enrichment for unprocessed inbox items
-├── db/                # Database layer
-│   ├── schema.ts      # Drizzle ORM table definitions
-│   ├── migrate.ts     # Migration runner and DB singleton
-│   ├── migrations/    # Generated SQL migration files
-│   └── queries/       # Per-table query helpers (CRUD + filters)
-├── location/          # Geolocation features
-│   ├── proximity.ts   # Haversine distance, nearby place detection
-│   └── cooldown.ts    # Per-user per-place alert cooldown tracking
-└── matrix/            # Matrix room/space management
-    ├── rooms.ts       # Room creation, Space child management
-    └── space.ts       # Space creation
 ```
 
 ## Troubleshooting
 
-### Bot does not respond to messages
+**Bot doesn't respond to messages**
 
-1. Check that the bot is running: `docker-compose logs bot`
-2. Verify the access token is valid: `curl -H "Authorization: Bearer $TOKEN" http://homeserver/_matrix/client/v3/account/whoami`
-3. Make sure the bot has been invited to and joined the room
-4. Check that the sender's Matrix ID is in the `users` list in `config.yaml`
+Check that the bot joined the room: `docker-compose logs bot | tail -50`. If you see `M_FORBIDDEN` on room creation, the bot may be trying to invite itself — this is a known issue when running `!setup` on a bot that is also listed in the invite list.
 
-### Database connection errors
+**`M_LIMIT_EXCEEDED` errors during setup**
 
-1. Confirm Postgres is running: `docker-compose -f docker-compose.dev.yml ps postgres`
-2. Test the connection: `psql $DATABASE_URL -c "SELECT 1"`
-3. Check that `DATABASE_URL` in `.env` matches the Postgres container's credentials
-4. If using Docker networking, use the service name (`postgres`) not `localhost`
+Synapse's default rate limits are strict. Add to `dev/synapse-data/homeserver.yaml`:
 
-### Synapse registration fails
+```yaml
+rc_message:
+  per_second: 100
+  burst_count: 200
+rc_creates:
+  per_second: 100
+  burst_count: 200
+rc_invites:
+  per_room:
+    per_second: 100
+    burst_count: 200
+  per_user:
+    per_second: 100
+    burst_count: 200
+```
 
-1. Make sure Synapse has finished starting (check health endpoint): `curl http://localhost:8008/health`
-2. If registration is disabled, enable it in `homeserver.yaml`: `enable_registration: true`
-3. For local dev, set `enable_registration_without_verification: true`
+Then restart Synapse: `docker-compose -f docker-compose.dev.yml restart synapse`.
 
-### LLM classification returns low confidence
+**Bot replays old messages on restart**
 
-1. Check `CLASSIFICATION_CONFIDENCE_THRESHOLD` in `.env` (default 0.7)
-2. Try lowering it to 0.5 for testing
-3. Verify your AWS Bedrock model access is approved (check the Bedrock console)
-4. Switch to `LLM_PROVIDER=anthropic` with a direct API key as an alternative
+This is handled — the bot records its startup timestamp and ignores events with `origin_server_ts` older than that. If you wipe the bot container and restart, old setup wizard messages will be correctly ignored.
 
-### Location alerts not firing
+**LLM classification seems wrong**
 
-1. Verify places exist in the database: `SELECT * FROM places;`
-2. Check that shopping items are linked to places: `SELECT * FROM shopping_items WHERE place_id IS NOT NULL AND status = 'pending';`
-3. Confirm the alert radius: `echo $ALERT_RADIUS_METERS` (default 500m)
-4. Check cooldowns: `SELECT * FROM location_cooldowns;` and consider lowering `LOCATION_COOLDOWN_MINUTES`
-5. Use `npm run test:location` to generate test curl commands
+The mock provider uses keyword matching and is intentionally simple. With a real LLM provider (Bedrock or Anthropic), classification accuracy is much higher. Check `LLM_PROVIDER` in your `.env`.
 
-### Docker build fails
+**Docker build fails**
 
-1. Make sure `package-lock.json` exists (run `npm install` first)
-2. Check Node version: the Dockerfile uses `node:20-alpine`
-3. If TypeScript compilation fails, run `npm run lint` locally to see errors
+The Dockerfile uses `node:20-slim` (Debian). Do not switch to `node:20-alpine` — the `@matrix-org/matrix-sdk-crypto-nodejs` native module does not support Linux arm64 musl (Alpine's libc).
 
-### Cron jobs not running
+## License
 
-1. Check the schedule in `config.yaml` (uses standard cron syntax)
-2. Verify the bot's timezone matches your expectations (Docker containers default to UTC)
-3. Look for cron startup logs: `docker-compose logs bot | grep "cron scheduled"`
+MIT
