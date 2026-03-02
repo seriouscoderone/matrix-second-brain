@@ -42,6 +42,9 @@ services:
         condition: service_healthy
     volumes:
       - ./config.yaml:/app/config.yaml
+      - ~/.aws:/root/.aws:ro
+    environment:
+      - AWS_PROFILE=${AWS_PROFILE:-personal}
     restart: on-failure
 
 volumes:

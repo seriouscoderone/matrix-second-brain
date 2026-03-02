@@ -9,3 +9,6 @@ coverage/
 *.js.map
 *.d.ts
 *.d.ts.map
+
+blackbox/builds/
+config.yaml
