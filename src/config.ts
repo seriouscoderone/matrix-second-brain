@@ -18,9 +18,7 @@ const EnvSchema = z.object({
 
   LLM_PROVIDER: z.enum(['bedrock', 'anthropic', 'mock']).default('bedrock'),
 
-  // Bedrock
-  AWS_ACCESS_KEY_ID: z.string().optional(),
-  AWS_SECRET_ACCESS_KEY: z.string().optional(),
+  // Bedrock — credentials come from EC2 instance profile, not env vars
   AWS_REGION: z.string().default('us-east-1'),
   BEDROCK_MODEL_ID: z.string().default('us.anthropic.claude-sonnet-4-5-20251001-v2:0'),
 

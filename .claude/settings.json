@@ -1,0 +1,11 @@
+{
+  "enabledPlugins": {},
+  "extraKnownMarketplaces": {
+    "keri-claude": {
+      "source": {
+        "source": "github",
+        "repo": "seriouscoderone/webapp-blueprint"
+      }
+    }
+  }
+}

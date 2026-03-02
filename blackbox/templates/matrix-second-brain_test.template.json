@@ -1,0 +1,831 @@
+{
+  "_meta": {
+    "suite": "matrix-second-brain",
+    "generated_at": "2026-03-02T00:00:00Z",
+    "schema_version": "1.0",
+    "note": "This is a Matrix bot service — no browser UI. The test agent executes scenarios via Matrix API calls (send message, read reply) rather than browser automation. base_url in manifest.json is the Matrix homeserver URL (e.g., http://localhost:8008)."
+  },
+  "matrix-second-brain": {
+    "setup-wizard": {
+      "feature": "Setup Wizard",
+      "file": "spec/apps/matrix-second-brain/features/setup-wizard.feature.md",
+      "scenarios": {
+        "Admin initiates setup wizard": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Admin provides space name and is prompted for users": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Admin invites additional users": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Admin chooses just me": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Non-admin user attempts setup": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Setup fails due to room creation error": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Bot restart clears wizard state": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Invalid user IDs in invite step": {
+          "_type": "scenario_outline",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null,
+          "examples": [
+            { "input": "@bob:localhost, @carol:localhost", "valid_count": "3 (admin + bob + carol)" },
+            { "input": "bob, @carol:localhost", "valid_count": "2 (admin + carol)" },
+            { "input": "just me", "valid_count": "1 (admin only)" }
+          ]
+        }
+      }
+    },
+    "inbox-message-processing": {
+      "feature": "Inbox Message Processing",
+      "file": "spec/apps/matrix-second-brain/features/inbox-message-processing.feature.md",
+      "scenarios": {
+        "Message classified as a task": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as a project": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as a shopping item": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as an event": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as a contact": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as a note": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as a resource": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as waiting_for": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as someday_maybe": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message classified as an area": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Pipeline error during classification": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Owner assignment based on sender": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Owner defaults to shared for ambiguous messages": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message from non-inbox room is ignored": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Bot's own messages are ignored": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Historical replay events are dropped": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Context loading provides existing data to the classifier": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        }
+      }
+    },
+    "clarification-flow": {
+      "feature": "Clarification Flow",
+      "file": "spec/apps/matrix-second-brain/features/clarification-flow.feature.md",
+      "scenarios": {
+        "Ambiguous message triggers clarification": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "User replies to clarification and message is re-processed": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Clarification is single-round only": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Clear message does not trigger clarification": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Clarification check returns needsClarification with low confidence": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Clarification check fails with an exception": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Pending clarification is room-scoped": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Only one pending clarification per user": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Bot restart clears pending clarifications": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        }
+      }
+    },
+    "project-room-messaging": {
+      "feature": "Project Room Messaging",
+      "file": "spec/apps/matrix-second-brain/features/project-room-messaging.feature.md",
+      "scenarios": {
+        "Message in project room is saved as a task": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Long message is truncated for title": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Short message uses full text as title only": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Owner assignment for shared project": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Owner assignment for personal project": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "No project found for room": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Bot's own messages in project room are ignored": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Non-text messages in project room are ignored": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "No AI pipeline for project room messages": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        }
+      }
+    },
+    "location-proximity-alerts": {
+      "feature": "Location Proximity Alerts",
+      "file": "spec/apps/matrix-second-brain/features/location-proximity-alerts.feature.md",
+      "scenarios": {
+        "User near a store with pending items receives an alert": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "User near a store but cooldown has not expired": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "User near a store after cooldown has expired": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "User near a store with no pending items": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "User not near any store": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Multiple stores within range": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Location event with invalid geo_uri": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Location event via MSC3488 format": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Shopping items show creator attribution": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Cooldown is per-user, not global": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Haversine distance calculation edge cases": {
+          "_type": "scenario_outline",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null,
+          "examples": [
+            { "place_lat": 37.7749, "place_lon": -122.4194, "user_lat": 37.7749, "user_lon": -122.4194, "distance_m": 0 },
+            { "place_lat": 37.7749, "place_lon": -122.4194, "user_lat": 37.7751, "user_lon": -122.4190, "distance_m": 50 },
+            { "place_lat": 37.7749, "place_lon": -122.4194, "user_lat": 37.7800, "user_lon": -122.4100, "distance_m": 1000 },
+            { "place_lat": 0.0000, "place_lon": 0.0000, "user_lat": 0.0001, "user_lon": 0.0001, "distance_m": 16 }
+          ]
+        }
+      }
+    },
+    "daily-digest": {
+      "feature": "Daily Digest",
+      "file": "spec/apps/matrix-second-brain/features/daily-digest.feature.md",
+      "scenarios": {
+        "Daily digest with tasks, events, and follow-ups": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Daily digest with no items": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Daily digest with only tasks": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Event time formatting": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Event with location": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Event without location": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Digest cron error is caught and logged": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Digest room is not configured": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        }
+      }
+    },
+    "weekly-review": {
+      "feature": "Weekly Review",
+      "file": "spec/apps/matrix-second-brain/features/weekly-review.feature.md",
+      "scenarios": {
+        "Weekly review with stale projects, overdue tasks, and reviews": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Weekly review with no issues": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Stale project detection logic": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Non-active projects are not included": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Overdue tasks show due date and owner": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Weekly review cron error is caught": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Digest room not configured prevents cron scheduling": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        }
+      }
+    },
+    "enrichment-cron": {
+      "feature": "Enrichment Cron",
+      "file": "spec/apps/matrix-second-brain/features/enrichment-cron.feature.md",
+      "scenarios": {
+        "Unprocessed items older than 5 minutes are detected": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "No stale items found": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Stale items are logged with content preview": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Enrichment cron error is caught": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Enrichment cron runs independently of digest room": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        }
+      }
+    },
+    "message-routing": {
+      "feature": "Message Routing",
+      "file": "spec/apps/matrix-second-brain/features/message-routing.feature.md",
+      "scenarios": {
+        "Text message in inbox room routes to inbox handler": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Text message in project room routes to project handler": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Location event routes to location handler": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "!setup command routes to wizard handler": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Wizard reply routes to wizard handler": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Message in unconfigured room is silently dropped": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Non-text messages are ignored (except location)": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Routing priority order": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Config is re-read on each message for inbox routing": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Bot ignores its own messages": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        }
+      }
+    }
+  }
+}

@@ -9,10 +9,7 @@ export class BedrockProvider implements LLMProvider {
   constructor() {
     this.client = new BedrockRuntimeClient({
       region: env.AWS_REGION,
-      credentials: {
-        accessKeyId: env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
-      },
+      // Credentials come from the EC2 instance profile — no static keys needed.
     });
     this.modelId = env.BEDROCK_MODEL_ID;
   }
