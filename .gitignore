@@ -12,3 +12,4 @@ coverage/
 
 blackbox/builds/
 config.yaml
+registration.yaml

@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import * as path from 'path';
 import * as fs from 'fs';
-import { MatrixClient, MembershipEvent, MessageEvent, RoomEvent } from 'matrix-bot-sdk';
-import { createMatrixClient, sendMessage } from './matrixClient';
+import { MatrixClient } from 'matrix-bot-sdk';
+import { createMatrixClient, createAppserviceClient, isAppserviceMode, sendMessage } from './matrixClient';
 import { handleSetupCommand, handleWizardReply, isInSetup } from './setup/wizard';
 import { handleInboxMessage } from './handlers/inbox';
 import { handleLocationEvent } from './handlers/location';
@@ -18,19 +18,9 @@ import { loadConfigYaml, env } from '../config';
 const dataDir = path.join(process.cwd(), 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-async function main(): Promise<void> {
-  console.log('🧠 Matrix Second Brain starting...');
-
-  // Run DB migrations
-  await runMigrations();
-
+function setupEventHandler(client: MatrixClient, startupTs: number): void {
   const db = getDb();
-  const client = createMatrixClient();
 
-  // Record startup time — used to skip historical events replayed on reconnect
-  const startupTs = Date.now();
-
-  // Set up message handler
   client.on('room.message', async (roomId: string, event: Record<string, unknown>) => {
     // Skip events that predate this bot session (replayed history)
     const eventTs = event.origin_server_ts as number | undefined;
@@ -86,21 +76,55 @@ async function main(): Promise<void> {
       return;
     }
   });
+}
 
-  // Start cron jobs
+function setupCronJobs(): void {
+  const db = getDb();
   const digestRoom = loadConfigYaml().rooms.digest;
+  const client = require('./matrixClient').getMatrixClient();
+
   if (digestRoom) {
     startDailyCron(db, async (msg) => { await sendMessage(client, digestRoom, msg); });
     startWeeklyCron(db, async (msg) => { await sendMessage(client, digestRoom, msg); });
   }
   startEnrichmentCron(db);
+}
 
-  // Start the bot
-  await client.start();
-  console.log('✅ Matrix Second Brain is running!');
-  console.log(`   Bot: ${env.MATRIX_BOT_USER_ID}`);
-  console.log(`   Admin: ${env.ADMIN_MATRIX_ID}`);
-  console.log(`   LLM: ${env.LLM_PROVIDER}`);
+async function main(): Promise<void> {
+  console.log('🧠 Matrix Second Brain starting...');
+
+  // Run DB migrations
+  await runMigrations();
+
+  // Record startup time — used to skip historical events replayed on reconnect
+  const startupTs = Date.now();
+
+  if (isAppserviceMode()) {
+    // --- Appservice mode: homeserver pushes events to us via HTTP ---
+    const { client, appservice } = createAppserviceClient();
+
+    setupEventHandler(client, startupTs);
+    setupCronJobs();
+
+    await appservice.begin();
+    console.log('✅ Matrix Second Brain is running! (appservice mode)');
+    console.log(`   Bot: ${env.MATRIX_BOT_USER_ID}`);
+    console.log(`   Admin: ${env.ADMIN_MATRIX_ID}`);
+    console.log(`   LLM: ${env.LLM_PROVIDER}`);
+    console.log(`   Listening on: ${env.APPSERVICE_BIND_ADDRESS}:${env.APPSERVICE_PORT}`);
+  } else {
+    // --- Client mode: bot polls /sync (original behavior) ---
+    const client = createMatrixClient();
+
+    setupEventHandler(client, startupTs);
+    setupCronJobs();
+
+    await client.start();
+    console.log('✅ Matrix Second Brain is running!');
+    console.log(`   Bot: ${env.MATRIX_BOT_USER_ID}`);
+    console.log(`   Admin: ${env.ADMIN_MATRIX_ID}`);
+    console.log(`   LLM: ${env.LLM_PROVIDER}`);
+  }
 }
 
 main().catch((err) => {

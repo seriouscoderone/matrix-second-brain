@@ -18,6 +18,12 @@ const EnvSchema = z.object({
 
   LLM_PROVIDER: z.enum(['bedrock', 'anthropic', 'mock']).default('bedrock'),
 
+  // Appservice mode (optional — if set, bot runs as a Matrix Application Service)
+  APPSERVICE_REGISTRATION: z.string().optional(), // path to registration YAML
+  APPSERVICE_PORT: z.coerce.number().default(9090),
+  APPSERVICE_BIND_ADDRESS: z.string().default('0.0.0.0'),
+  MATRIX_HOMESERVER_NAME: z.string().optional(), // e.g. "example.com" (federation name)
+
   // Bedrock — credentials come from EC2 instance profile, not env vars
   AWS_REGION: z.string().default('us-east-1'),
   BEDROCK_MODEL_ID: z.string().default('us.anthropic.claude-sonnet-4-5-20251001-v2:0'),
