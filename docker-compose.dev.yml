@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./dev/synapse-data:/data
+    environment:
+      SYNAPSE_SERVER_NAME: localhost
+      SYNAPSE_REPORT_STATS: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: secondbrain_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpassword
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    env_file: .env.dev
+    depends_on:
+      synapse:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    restart: on-failure
+
+volumes:
+  postgres_dev_data:

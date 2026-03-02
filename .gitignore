@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.dev
+*.env
+data/
+dev/synapse-data/
+coverage/
+*.js.map
+*.d.ts
+*.d.ts.map

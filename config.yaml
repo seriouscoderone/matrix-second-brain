@@ -1,0 +1,13 @@
+space:
+  id: '!AEpiULASFvPAAniRcR:localhost'
+  name: Personal Brain
+rooms:
+  digest: '!bhYvBzDgTzxQnFmcTm:localhost'
+  inbox:
+    alice: '!AiVWvzEmcDmMaqDQBt:localhost'
+users:
+  - '@alice:localhost'
+cron:
+  daily_digest: 0 8 * * *
+  weekly_review: 0 9 * * 1
+  enrichment: 0 */6 * * *
