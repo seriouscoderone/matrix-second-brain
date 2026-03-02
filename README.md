@@ -146,59 +146,123 @@ Using [Element Web](https://app.element.io) pointed at `http://localhost:8008`, 
 
 ## Production Deployment
 
-### LLM: AWS Bedrock
+The bot supports two connection modes:
 
-1. In the AWS Console, go to **Bedrock → Model access** and request access to Anthropic Claude models (~5 minutes for approval).
-2. Create an IAM user with this policy:
+| Mode | How it connects | Best for |
+|---|---|---|
+| **Client mode** (default) | Polls `/sync` as a regular Matrix user | Local dev, simple setups |
+| **Appservice mode** | Homeserver pushes events via HTTP | Production, installable plugin |
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
-    "Resource": "arn:aws:bedrock:us-east-1::foundation-model/us.anthropic.*"
-  }]
-}
-```
+### Option A: Client Mode (Simple)
 
-3. Generate access keys for the IAM user → add to `.env`.
-
-### LLM: Anthropic API
-
-Set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=sk-ant-...`. No AWS account needed.
-
-### Deploy
+Register a bot user, get its access token, and point the bot at your homeserver. This is the quickest path.
 
 ```bash
 ssh your-server
 git clone <repo-url> /opt/matrix-second-brain
 cd /opt/matrix-second-brain
 cp .env.example .env
-# edit .env with production values
+# edit .env with production values (see environment variables table below)
 docker-compose up -d --build
-docker-compose logs -f bot
 ```
 
-The bot runs migrations automatically on startup and connects to your existing Synapse and PostgreSQL instances.
+### Option B: Appservice Mode (Recommended for Production)
 
-### Environment variables
+Run as a Matrix Application Service — the homeserver pushes events to the bot instead of the bot polling. More efficient and the standard way to deploy Matrix bots.
 
-| Variable | Required | Description |
-|---|---|---|
-| `MATRIX_HOMESERVER_URL` | Yes | Full URL of your Matrix homeserver |
-| `MATRIX_BOT_USER_ID` | Yes | Bot's Matrix ID, e.g. `@secondbrain:yourdomain.com` |
-| `MATRIX_BOT_ACCESS_TOKEN` | Yes | Bot's access token (from `/login`) |
-| `ADMIN_MATRIX_ID` | Yes | Matrix ID allowed to run `!setup` |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `LLM_PROVIDER` | Yes | `bedrock`, `anthropic`, or `mock` |
-| `AWS_ACCESS_KEY_ID` | Bedrock only | IAM access key |
-| `AWS_SECRET_ACCESS_KEY` | Bedrock only | IAM secret key |
-| `AWS_REGION` | Bedrock only | Default: `us-east-1` |
-| `ANTHROPIC_API_KEY` | Anthropic only | API key from console.anthropic.com |
-| `CLASSIFICATION_CONFIDENCE_THRESHOLD` | No | Default: `0.7` |
-| `ALERT_RADIUS_METERS` | No | Default: `500` |
-| `LOCATION_COOLDOWN_MINUTES` | No | Default: `120` |
+**1. Generate the registration file:**
+
+```bash
+npx ts-node scripts/generate-registration.ts \
+  --url http://bot-host:9090 \
+  --localpart secondbrain \
+  --output registration.yaml
+```
+
+**2. Install on the homeserver:**
+
+Copy `registration.yaml` to your Synapse config directory, then add to `homeserver.yaml`:
+
+```yaml
+app_service_config_files:
+  - /etc/synapse/registration.yaml
+```
+
+Restart Synapse.
+
+**3. Configure the bot:**
+
+```env
+# .env
+MATRIX_HOMESERVER_URL=https://matrix.example.com
+MATRIX_BOT_USER_ID=@secondbrain:example.com
+ADMIN_MATRIX_ID=@alice:example.com
+DATABASE_URL=postgresql://user:pass@localhost:5432/secondbrain
+
+LLM_PROVIDER=bedrock
+AWS_REGION=us-east-1
+
+APPSERVICE_REGISTRATION=/app/registration.yaml
+MATRIX_HOMESERVER_NAME=example.com
+APPSERVICE_PORT=9090
+```
+
+**4. Start:**
+
+```bash
+docker-compose up -d --build
+```
+
+The bot logs will show `(appservice mode)` and the listening port.
+
+### LLM Providers
+
+**AWS Bedrock (recommended on EC2)**
+
+On EC2, attach an IAM role to the instance with this policy — no access keys needed:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": "bedrock:InvokeModel",
+    "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-*"
+  }]
+}
+```
+
+Request model access in the AWS Console under **Bedrock → Model access**.
+
+**AWS Bedrock (not on EC2)**
+
+If running outside AWS, mount your `~/.aws` credentials or set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as environment variables.
+
+**Anthropic API**
+
+Set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY=sk-ant-...`. No AWS account needed.
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `MATRIX_HOMESERVER_URL` | Yes | — | Full URL of your Matrix homeserver |
+| `MATRIX_BOT_USER_ID` | Yes | — | Bot's Matrix ID, e.g. `@secondbrain:example.com` |
+| `MATRIX_BOT_ACCESS_TOKEN` | Client mode | — | Bot's access token (from `/login`). Not needed in appservice mode. |
+| `ADMIN_MATRIX_ID` | Yes | — | Matrix ID allowed to run `!setup` |
+| `DATABASE_URL` | Yes | — | PostgreSQL connection string |
+| `LLM_PROVIDER` | Yes | `bedrock` | `bedrock`, `anthropic`, or `mock` |
+| `AWS_REGION` | Bedrock | `us-east-1` | AWS region for Bedrock |
+| `BEDROCK_MODEL_ID` | Bedrock | `us.anthropic.claude-sonnet-4-5-20251001-v2:0` | Bedrock model ID |
+| `ANTHROPIC_API_KEY` | Anthropic | — | API key from console.anthropic.com |
+| `ANTHROPIC_MODEL_ID` | Anthropic | `claude-sonnet-4-6` | Anthropic model ID |
+| `APPSERVICE_REGISTRATION` | Appservice mode | — | Path to registration YAML (enables appservice mode) |
+| `APPSERVICE_PORT` | No | `9090` | Port the appservice listens on |
+| `APPSERVICE_BIND_ADDRESS` | No | `0.0.0.0` | Bind address for appservice listener |
+| `MATRIX_HOMESERVER_NAME` | Appservice mode | — | Federation domain (e.g. `example.com`) |
+| `CLASSIFICATION_CONFIDENCE_THRESHOLD` | No | `0.7` | Minimum confidence before asking clarifying questions |
+| `ALERT_RADIUS_METERS` | No | `500` | Proximity alert radius in meters |
+| `LOCATION_COOLDOWN_MINUTES` | No | `120` | Minutes between repeat alerts per user per place |
 
 ## Capture Categories
 
