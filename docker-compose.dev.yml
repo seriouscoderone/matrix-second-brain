@@ -40,8 +40,11 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+    ports:
+      - "9090:9090"
     volumes:
       - bot_dev_data:/app/data
+      - ./registration.yaml:/app/registration.yaml:ro
       - ~/.aws:/root/.aws:ro
     environment:
       - AWS_PROFILE=${AWS_PROFILE:-personal}
