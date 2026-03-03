@@ -8,8 +8,10 @@ services:
     ports:
       - "${APPSERVICE_PORT:-9090}:${APPSERVICE_PORT:-9090}"
     volumes:
-      - ./config.yaml:/app/config.yaml
+      - bot-data:/app/data
       - ./registration.yaml:/app/registration.yaml:ro
+volumes:
+  bot-data:
     logging:
       driver: json-file
       options:

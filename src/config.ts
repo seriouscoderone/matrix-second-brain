@@ -58,22 +58,22 @@ const ConfigYamlSchema = z.object({
   space: z.object({
     id: z.string().default(''),
     name: z.string().default(''),
-  }),
+  }).default({}),
   rooms: z.object({
     digest: z.string().default(''),
     inbox: z.record(z.string()).default({}),
-  }),
+  }).default({}),
   users: z.array(z.string()).default([]),
   cron: z.object({
     daily_digest: z.string().default('0 8 * * *'),
     weekly_review: z.string().default('0 9 * * 1'),
     enrichment: z.string().default('0 */6 * * *'),
-  }),
+  }).default({}),
 });
 
 export type ConfigYaml = z.infer<typeof ConfigYamlSchema>;
 
-const CONFIG_YAML_PATH = path.join(process.cwd(), 'config.yaml');
+const CONFIG_YAML_PATH = path.join(process.cwd(), 'data', 'config.yaml');
 
 export function loadConfigYaml(): ConfigYaml {
   if (!fs.existsSync(CONFIG_YAML_PATH)) {
@@ -84,6 +84,8 @@ export function loadConfigYaml(): ConfigYaml {
 }
 
 export function saveConfigYaml(config: ConfigYaml): void {
+  const dir = path.dirname(CONFIG_YAML_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(CONFIG_YAML_PATH, yaml.dump(config), 'utf8');
 }
 

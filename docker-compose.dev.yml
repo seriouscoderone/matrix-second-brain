@@ -41,7 +41,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./config.yaml:/app/config.yaml
+      - bot_dev_data:/app/data
       - ~/.aws:/root/.aws:ro
     environment:
       - AWS_PROFILE=${AWS_PROFILE:-personal}
@@ -49,3 +49,4 @@ services:
 
 volumes:
   postgres_dev_data:
+  bot_dev_data:
