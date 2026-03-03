@@ -21,15 +21,23 @@ Then the AI pipeline Stage 1 (clarify) returns `needsClarification = true` with 
 And the bot replies in-thread with the clarifying questions (e.g., "What thing are you referring to?", "What stuff?")
 And the bot stores a pending clarification for my user ID with the original message and room context
 
-### Scenario: User replies to clarification and message is re-processed
-> The user's clarification response is merged with the original message and re-classified.
+### Scenario: User replies to clarification and message is re-processed with full thread context
+> The bot fetches the entire thread history and sends it as context to the LLM.
 
-Given I sent an ambiguous message and the bot asked clarifying questions
+Given I sent an ambiguous message and the bot asked clarifying questions in a thread
 And a pending clarification exists for my user ID
-When I send a reply in the same inbox room (e.g., "I meant the dentist appointment next Tuesday")
-Then the bot merges my original message with the clarification: "Original message: thing about the stuff next week\nClarification: I meant the dentist appointment next Tuesday"
-And the merged message is processed by the AI pipeline starting at Stage 3 (classify), skipping Stage 1 (clarify)
-And the bot classifies the merged message (e.g., as `event`) and saves it
+When I reply in the thread (e.g., "I meant the dentist appointment next Tuesday")
+Then the bot fetches the full thread history via `getRelationsForEvent` with `m.thread` relation type
+And the thread messages are sorted chronologically (oldest first)
+And the bot formats the thread as a conversation transcript:
+  ```
+  alice: thing about the stuff next week
+  Bot: 🤔 What thing are you referring to? What stuff?
+  alice: I meant the dentist appointment next Tuesday
+  ```
+And the full conversation is passed to the AI pipeline as `PipelineContext.pendingClarification.originalMessage`
+And the pipeline starts at Stage 3 (classify), skipping Stage 1 (clarify)
+And the bot classifies the conversation (e.g., as `event`) and saves it
 And the bot replies in-thread with a confirmation
 And the pending clarification for my user ID is cleared
 
@@ -94,3 +102,23 @@ Given a pending clarification exists for my user ID
 When the bot process restarts
 Then the pending clarification no longer exists
 And if I send a message in my inbox room, it is treated as a new message (not a clarification reply)
+
+### Scenario: Thread reply fallback quote is stripped
+> Element adds a fallback quote prefix for clients that don't support threads. The bot strips it.
+
+Given I am in a thread started by my original inbox message
+When I reply in the thread and Element adds a fallback prefix: `> <@alice:localhost> original text\n\nmy actual reply`
+Then the bot strips the `> <@user:server>` prefix lines
+And only "my actual reply" is processed as the message content
+
+### Scenario: Thread history includes bot questions and user replies
+> The full thread context sent to the LLM includes both bot and user messages.
+
+Given I sent an ambiguous message and the bot asked two clarifying questions in a thread
+When I reply answering the questions
+Then the thread history fetched by the bot includes:
+  - The original user message (root event)
+  - The bot's clarifying questions
+  - My reply
+And all messages are formatted with sender labels (username for users, "Bot" for bot messages)
+And the messages are in chronological order
