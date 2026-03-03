@@ -13,6 +13,7 @@ import { startDailyCron } from '../cron/daily';
 import { startWeeklyCron } from '../cron/weekly';
 import { startEnrichmentCron } from '../cron/enrich';
 import { loadConfigYaml, saveConfigYaml, env } from '../config';
+import { listAnthropicModels, getLatestModelId, formatModelList } from '../ai/models';
 
 // Ensure data directory exists for bot storage
 const dataDir = path.join(process.cwd(), 'data');
@@ -79,7 +80,12 @@ function setupEventHandler(
           '| `!setup` | Run the first-time setup wizard |',
           '| `!setup force` | Re-run the setup wizard (overwrites config) |',
           '| `!model` | Show current LLM model |',
-          '| `!model <id>` | Switch LLM model at runtime |',
+          '| `!model list` | Show all available Bedrock models |',
+          '| `!model latest` | Switch to the latest Sonnet |',
+          '| `!model latest haiku` | Switch to the latest Haiku (cheaper) |',
+          '| `!model latest opus` | Switch to the latest Opus (most capable) |',
+          '| `!model <id>` | Switch to a specific model ID |',
+          '| `!model reset` | Clear override, revert to .env default |',
           '',
           '**Current config:**',
           `- LLM provider: \`${env.LLM_PROVIDER}\``,
@@ -124,18 +130,80 @@ function setupEventHandler(
         await sendMessage(client, roomId, '⛔ Only the admin can change the model.');
         return;
       }
-      const newModel = text.replace('!model', '').trim();
-      if (!newModel) {
+      const arg = text.replace('!model', '').trim();
+
+      // !model (no args) — show current model
+      if (!arg) {
         const cfg = loadConfigYaml();
         const current = cfg.llm_model
           || (env.LLM_PROVIDER === 'bedrock' ? env.BEDROCK_MODEL_ID : env.ANTHROPIC_MODEL_ID);
-        await sendMessage(client, roomId, `Current model: \`${current}\`\nUsage: \`!model <model-id>\` to switch`);
+        const source = cfg.llm_model ? 'config' : 'env default';
+        await sendMessage(client, roomId,
+          `Current model: \`${current}\` (${source})\n\n` +
+          'Commands: `!model list` | `!model latest` | `!model latest haiku` | `!model <id>`');
         return;
       }
+
+      // !model list — show available models from Bedrock
+      if (arg === 'list') {
+        if (env.LLM_PROVIDER !== 'bedrock') {
+          await sendMessage(client, roomId, 'Model discovery is only available with `LLM_PROVIDER=bedrock`.');
+          return;
+        }
+        try {
+          const cfg = loadConfigYaml();
+          const currentModel = cfg.llm_model || env.BEDROCK_MODEL_ID;
+          const models = await listAnthropicModels(true);
+          await sendMessage(client, roomId, formatModelList(models, currentModel));
+        } catch (err) {
+          await sendMessage(client, roomId, `Failed to list models: ${(err as Error).message}`);
+        }
+        return;
+      }
+
+      // !model latest [tier] — auto-select the latest model
+      if (arg === 'latest' || arg.startsWith('latest ')) {
+        if (env.LLM_PROVIDER !== 'bedrock') {
+          await sendMessage(client, roomId, 'Model discovery is only available with `LLM_PROVIDER=bedrock`.');
+          return;
+        }
+        const tier = arg.split(' ')[1] as 'opus' | 'sonnet' | 'haiku' | undefined;
+        const validTiers = ['opus', 'sonnet', 'haiku'];
+        if (tier && !validTiers.includes(tier)) {
+          await sendMessage(client, roomId, `Invalid tier \`${tier}\`. Choose: \`opus\`, \`sonnet\`, or \`haiku\`.`);
+          return;
+        }
+        try {
+          const latestId = await getLatestModelId(tier || 'sonnet');
+          if (!latestId) {
+            await sendMessage(client, roomId, 'No active models found. Check your Bedrock model access.');
+            return;
+          }
+          const cfg = loadConfigYaml();
+          cfg.llm_model = latestId;
+          saveConfigYaml(cfg);
+          await sendMessage(client, roomId, `✅ Switched to latest ${tier || 'sonnet'}: \`${latestId}\``);
+        } catch (err) {
+          await sendMessage(client, roomId, `Failed to discover models: ${(err as Error).message}`);
+        }
+        return;
+      }
+
+      // !model reset — clear override, revert to env default
+      if (arg === 'reset') {
+        const cfg = loadConfigYaml();
+        delete cfg.llm_model;
+        saveConfigYaml(cfg);
+        const fallback = env.LLM_PROVIDER === 'bedrock' ? env.BEDROCK_MODEL_ID : env.ANTHROPIC_MODEL_ID;
+        await sendMessage(client, roomId, `✅ Model override cleared. Using env default: \`${fallback}\``);
+        return;
+      }
+
+      // !model <specific-id> — set explicit model
       const cfg = loadConfigYaml();
-      cfg.llm_model = newModel;
+      cfg.llm_model = arg;
       saveConfigYaml(cfg);
-      await sendMessage(client, roomId, `✅ Model switched to \`${newModel}\`. Takes effect on next message.`);
+      await sendMessage(client, roomId, `✅ Model switched to \`${arg}\`. Takes effect on next message.`);
       return;
     }
 

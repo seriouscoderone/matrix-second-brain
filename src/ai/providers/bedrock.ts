@@ -1,6 +1,10 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { LLMProvider, LLMMessage, LLMResponse } from './interface';
 import { env, loadConfigYaml } from '../../config';
+import { getLatestModelId } from '../models';
+
+// Cached auto-discovered model ID so we only call ListFoundationModels once at startup.
+let resolvedLatestModel: string | null = null;
 
 export class BedrockProvider implements LLMProvider {
   private client: BedrockRuntimeClient;
@@ -12,9 +16,25 @@ export class BedrockProvider implements LLMProvider {
     });
   }
 
-  private getModelId(): string {
+  private async getModelId(): Promise<string> {
+    // 1. Explicit runtime override from config.yaml (set via !model command)
     const config = loadConfigYaml();
-    return config.llm_model || env.BEDROCK_MODEL_ID;
+    if (config.llm_model) return config.llm_model;
+
+    // 2. Explicit env var (user set a specific model in .env)
+    if (process.env.BEDROCK_MODEL_ID) return env.BEDROCK_MODEL_ID;
+
+    // 3. Auto-discover the latest Sonnet from Bedrock
+    if (!resolvedLatestModel) {
+      resolvedLatestModel = await getLatestModelId('sonnet');
+      if (resolvedLatestModel) {
+        console.log(`🤖 Auto-selected Bedrock model: ${resolvedLatestModel}`);
+      }
+    }
+    if (resolvedLatestModel) return resolvedLatestModel;
+
+    // 4. Fallback to the Zod default
+    return env.BEDROCK_MODEL_ID;
   }
 
   async chat(systemPrompt: string, messages: LLMMessage[]): Promise<LLMResponse> {
@@ -25,7 +45,7 @@ export class BedrockProvider implements LLMProvider {
       messages: messages.map(m => ({ role: m.role, content: m.content })),
     });
 
-    const modelId = this.getModelId();
+    const modelId = await this.getModelId();
     const command = new InvokeModelCommand({
       modelId,
       contentType: 'application/json',
