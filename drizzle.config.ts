@@ -7,6 +7,6 @@ export default defineConfig({
   out: './src/db/migrations',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'postgresql://postgres:devpassword@localhost:5432/secondbrain_dev',
+    url: process.env.DATABASE_URL!,
   },
 });
