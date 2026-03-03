@@ -7,13 +7,82 @@ import { createProjectRoom } from '../../matrix/rooms';
 import { updateProjectRoomId, getProjectByName } from '../../db/queries/projects';
 import { loadConfigYaml, env } from '../../config';
 
-// Track pending clarifications: Map<userId, { roomId, originalEventId, context }>
+// Track pending clarifications: Map<userId, { roomId, threadEventId, capturedBy }>
 const pendingClarifications = new Map<string, {
   roomId: string;
-  originalEventId: string;
-  context: PipelineContext;
+  threadEventId: string;
   capturedBy: string;
 }>();
+
+// ─── Thread History ─────────────────────────────────────────────────────────
+
+interface ThreadMessage {
+  sender: string;
+  body: string;
+}
+
+/**
+ * Fetch the full thread history for a given root event.
+ * Returns messages in chronological order (oldest first).
+ */
+async function getThreadHistory(
+  client: MatrixClient,
+  roomId: string,
+  threadRootEventId: string,
+): Promise<ThreadMessage[]> {
+  try {
+    // Get the root event first
+    const rootEvent = await client.getEvent(roomId, threadRootEventId);
+    const rootBody = rootEvent?.content?.body as string | undefined;
+
+    const messages: ThreadMessage[] = [];
+    if (rootBody) {
+      messages.push({
+        sender: rootEvent.sender as string,
+        body: rootBody,
+      });
+    }
+
+    // Fetch all thread replies
+    const relations = await client.getRelationsForEvent(
+      roomId, threadRootEventId, 'm.thread',
+    );
+
+    // Relations come in reverse chronological order — sort by origin_server_ts
+    const sorted = (relations.chunk || []).sort(
+      (a: Record<string, unknown>, b: Record<string, unknown>) =>
+        (a.origin_server_ts as number) - (b.origin_server_ts as number),
+    );
+
+    for (const evt of sorted) {
+      const body = evt?.content?.body as string | undefined;
+      if (!body) continue;
+      messages.push({
+        sender: evt.sender as string,
+        body,
+      });
+    }
+
+    return messages;
+  } catch (err) {
+    console.warn('Failed to fetch thread history:', err);
+    return [];
+  }
+}
+
+/**
+ * Format thread history into a single context string for the LLM.
+ */
+function formatThreadContext(messages: ThreadMessage[]): string {
+  return messages
+    .map(m => {
+      const label = m.sender === env.MATRIX_BOT_USER_ID ? 'Bot' : getUsernameFromId(m.sender);
+      return `${label}: ${m.body}`;
+    })
+    .join('\n');
+}
+
+// ─── Inbox Handler ──────────────────────────────────────────────────────────
 
 export async function handleInboxMessage(
   client: MatrixClient,
@@ -25,13 +94,26 @@ export async function handleInboxMessage(
 ): Promise<void> {
   const username = getUsernameFromId(userId);
 
-  // Check if this is a clarification reply
+  // Check if this user has a pending clarification in this room
   const pending = pendingClarifications.get(userId);
   if (pending && pending.roomId === roomId) {
     pendingClarifications.delete(userId);
+
+    // Fetch the full thread history for rich context
+    const threadMessages = await getThreadHistory(client, roomId, pending.threadEventId);
+    const threadContext = formatThreadContext(threadMessages);
+
+    // Build clarification context with full conversation
+    const fullContext: PipelineContext = {
+      pendingClarification: {
+        originalMessage: threadContext || content,
+        classification: {},
+      },
+    };
+
     await processFinalMessage(
-      client, db, roomId, pending.originalEventId,
-      content, pending.capturedBy, pending.context,
+      client, db, roomId, pending.threadEventId,
+      userId, content, pending.capturedBy, fullContext,
     );
     return;
   }
@@ -45,8 +127,8 @@ export async function handleInboxMessage(
     matrixMessageId: eventId,
   });
 
-  // Run pipeline
-  await processFinalMessage(client, db, roomId, eventId, content, username, undefined);
+  // Run pipeline (new message — not a clarification reply)
+  await processFinalMessage(client, db, roomId, eventId, userId, content, username, undefined);
 }
 
 async function processFinalMessage(
@@ -54,6 +136,7 @@ async function processFinalMessage(
   db: Db,
   roomId: string,
   eventId: string,
+  userId: string,
   content: string,
   capturedBy: string,
   clarificationContext?: PipelineContext,
@@ -64,19 +147,12 @@ async function processFinalMessage(
     );
 
     if (result.needsClarification) {
-      // Store pending clarification state
-      const cfg = loadConfigYaml();
-      const userId = Object.entries(cfg.rooms.inbox)
-        .find(([, rid]) => rid === roomId)?.[0];
-
-      if (userId) {
-        pendingClarifications.set(`@${userId}:${env.MATRIX_HOMESERVER_URL.replace(/https?:\/\//, '')}`, {
-          roomId,
-          originalEventId: eventId,
-          context: { pendingClarification: { originalMessage: content, classification: {} } },
-          capturedBy,
-        });
-      }
+      // Key by the actual userId from the Matrix event — no reconstruction needed
+      pendingClarifications.set(userId, {
+        roomId,
+        threadEventId: eventId,
+        capturedBy,
+      });
 
       const questions = result.clarifyingQuestions.join('\n');
       await sendThreadReply(client, roomId, eventId, `🤔 ${questions}`);

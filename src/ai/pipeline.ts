@@ -315,9 +315,9 @@ export async function processCapturedMessage(
 ): Promise<PipelineResult> {
   const provider = createProvider();
 
-  // If we have clarification context, merge the original message with the clarification response
+  // If we have clarification context, include the full conversation thread
   const messageToProcess = clarificationContext?.pendingClarification
-    ? `Original message: ${clarificationContext.pendingClarification.originalMessage}\nClarification: ${content}`
+    ? `Conversation thread:\n${clarificationContext.pendingClarification.originalMessage}\n\nLatest reply: ${content}`
     : content;
 
   // Stage 1: Check if clarification is needed (skip if this IS a clarification response)

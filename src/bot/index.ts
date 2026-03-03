@@ -52,8 +52,16 @@ function setupEventHandler(
     // Only handle text messages from here
     if (msgtype !== 'm.text') return;
 
-    const text = (content.body as string)?.trim();
+    let text = (content.body as string)?.trim();
     if (!text) return;
+
+    // Strip fallback quote prefix from thread replies.
+    // Element adds "> <@user:server> ...\n\n" for clients that don't support threads.
+    const relatesTo = content['m.relates_to'] as Record<string, unknown> | undefined;
+    if (relatesTo?.rel_type === 'm.thread') {
+      text = text.replace(/^(> <@[^>]+>[^\n]*\n)+\n*/, '').trim();
+      if (!text) return;
+    }
 
     // !help command — show available commands
     if (text === '!help') {
