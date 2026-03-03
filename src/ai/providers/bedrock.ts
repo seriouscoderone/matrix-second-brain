@@ -1,17 +1,20 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { LLMProvider, LLMMessage, LLMResponse } from './interface';
-import { env } from '../../config';
+import { env, loadConfigYaml } from '../../config';
 
 export class BedrockProvider implements LLMProvider {
   private client: BedrockRuntimeClient;
-  private modelId: string;
 
   constructor() {
     this.client = new BedrockRuntimeClient({
       region: env.AWS_REGION,
       // Credentials come from the EC2 instance profile — no static keys needed.
     });
-    this.modelId = env.BEDROCK_MODEL_ID;
+  }
+
+  private getModelId(): string {
+    const config = loadConfigYaml();
+    return config.llm_model || env.BEDROCK_MODEL_ID;
   }
 
   async chat(systemPrompt: string, messages: LLMMessage[]): Promise<LLMResponse> {
@@ -22,8 +25,9 @@ export class BedrockProvider implements LLMProvider {
       messages: messages.map(m => ({ role: m.role, content: m.content })),
     });
 
+    const modelId = this.getModelId();
     const command = new InvokeModelCommand({
-      modelId: this.modelId,
+      modelId,
       contentType: 'application/json',
       accept: 'application/json',
       body,
@@ -34,7 +38,7 @@ export class BedrockProvider implements LLMProvider {
 
     return {
       content: result.content[0].text,
-      model: this.modelId,
+      model: modelId,
       inputTokens: result.usage?.input_tokens,
       outputTokens: result.usage?.output_tokens,
     };

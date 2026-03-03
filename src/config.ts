@@ -26,7 +26,7 @@ const EnvSchema = z.object({
 
   // Bedrock — credentials come from EC2 instance profile, not env vars
   AWS_REGION: z.string().default('us-east-1'),
-  BEDROCK_MODEL_ID: z.string().default('us.anthropic.claude-sonnet-4-5-20251001-v2:0'),
+  BEDROCK_MODEL_ID: z.string().default('us.anthropic.claude-sonnet-4-5-20250929-v1:0'),
 
   // Direct Anthropic
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -69,6 +69,7 @@ const ConfigYamlSchema = z.object({
     weekly_review: z.string().default('0 9 * * 1'),
     enrichment: z.string().default('0 */6 * * *'),
   }).default({}),
+  llm_model: z.string().optional(),
 });
 
 export type ConfigYaml = z.infer<typeof ConfigYamlSchema>;

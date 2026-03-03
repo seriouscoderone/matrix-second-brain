@@ -12,7 +12,7 @@ import { getProjectByRoomId } from '../db/queries/projects';
 import { startDailyCron } from '../cron/daily';
 import { startWeeklyCron } from '../cron/weekly';
 import { startEnrichmentCron } from '../cron/enrich';
-import { loadConfigYaml, env } from '../config';
+import { loadConfigYaml, saveConfigYaml, env } from '../config';
 
 // Ensure data directory exists for bot storage
 const dataDir = path.join(process.cwd(), 'data');
@@ -57,6 +57,27 @@ function setupEventHandler(
     // !setup command — works in any room
     if (text === '!setup' || text === '!setup force') {
       await handleSetupCommand(client, roomId, userId, text === '!setup force');
+      return;
+    }
+
+    // !model command — admin can switch LLM model at runtime
+    if (text.startsWith('!model')) {
+      if (userId !== env.ADMIN_MATRIX_ID) {
+        await sendMessage(client, roomId, '⛔ Only the admin can change the model.');
+        return;
+      }
+      const newModel = text.replace('!model', '').trim();
+      if (!newModel) {
+        const cfg = loadConfigYaml();
+        const current = cfg.llm_model
+          || (env.LLM_PROVIDER === 'bedrock' ? env.BEDROCK_MODEL_ID : env.ANTHROPIC_MODEL_ID);
+        await sendMessage(client, roomId, `Current model: \`${current}\`\nUsage: \`!model <model-id>\` to switch`);
+        return;
+      }
+      const cfg = loadConfigYaml();
+      cfg.llm_model = newModel;
+      saveConfigYaml(cfg);
+      await sendMessage(client, roomId, `✅ Model switched to \`${newModel}\`. Takes effect on next message.`);
       return;
     }
 

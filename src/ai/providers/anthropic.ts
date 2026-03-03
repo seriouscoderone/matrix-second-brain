@@ -1,19 +1,23 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { LLMProvider, LLMMessage, LLMResponse } from './interface';
-import { env } from '../../config';
+import { env, loadConfigYaml } from '../../config';
 
 export class AnthropicProvider implements LLMProvider {
   private client: Anthropic;
-  private modelId: string;
 
   constructor() {
     this.client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY! });
-    this.modelId = env.ANTHROPIC_MODEL_ID;
+  }
+
+  private getModelId(): string {
+    const config = loadConfigYaml();
+    return config.llm_model || env.ANTHROPIC_MODEL_ID;
   }
 
   async chat(systemPrompt: string, messages: LLMMessage[]): Promise<LLMResponse> {
+    const modelId = this.getModelId();
     const response = await this.client.messages.create({
-      model: this.modelId,
+      model: modelId,
       max_tokens: 4096,
       system: systemPrompt,
       messages: messages.map(m => ({ role: m.role, content: m.content })),
@@ -24,7 +28,7 @@ export class AnthropicProvider implements LLMProvider {
 
     return {
       content: content.text,
-      model: this.modelId,
+      model: modelId,
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
     };
