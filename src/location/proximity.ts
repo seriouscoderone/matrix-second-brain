@@ -2,7 +2,7 @@ import { Db } from '../db/migrate';
 import { Place } from '../db/schema';
 import { getAllPlaces } from '../db/queries/places';
 import { getPendingItemsForPlace } from '../db/queries/shopping';
-import { checkCooldown, updateCooldown } from './cooldown';
+import { checkAndSetCooldown } from './cooldown';
 import { env } from '../config';
 
 // Haversine formula — returns distance in meters
@@ -65,7 +65,7 @@ export async function checkProximityAndAlert(
   const alerts = await findNearbyPlaces(lat, lon, db);
 
   for (const alert of alerts) {
-    const canAlert = await checkCooldown(userId, alert.place.id, db);
+    const canAlert = await checkAndSetCooldown(userId, alert.place.id, db);
     if (!canAlert) continue;
 
     const itemLines = alert.items
@@ -75,6 +75,5 @@ export async function checkProximityAndAlert(
     const message = `Hey! You're near ${alert.place.name} (~${alert.distanceMeters}m). You have items on your list there:\n${itemLines}\nWorth a stop if you have time!`;
 
     await sendAlert(message);
-    await updateCooldown(userId, alert.place.id, db);
   }
 }

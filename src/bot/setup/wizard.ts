@@ -23,11 +23,25 @@ export async function handleSetupCommand(
   client: MatrixClient,
   roomId: string,
   userId: string,
+  force = false,
 ): Promise<void> {
   // Only the admin can run !setup
   if (userId !== env.ADMIN_MATRIX_ID) {
     await sendMessage(client, roomId, '⛔ Only the admin can run `!setup`.');
     return;
+  }
+
+  // Prevent accidental re-setup — existing config means Space already exists
+  if (!force) {
+    const existing = loadConfigYaml();
+    if (existing.space.id) {
+      await sendMessage(
+        client,
+        roomId,
+        `⚠️ Already configured — Space "${existing.space.name}" (${existing.space.id}).\nSend \`!setup force\` to reconfigure.`,
+      );
+      return;
+    }
   }
 
   wizardStates.set(userId, { step: 'space_name' });

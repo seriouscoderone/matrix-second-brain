@@ -55,8 +55,8 @@ function setupEventHandler(
     if (!text) return;
 
     // !setup command — works in any room
-    if (text === '!setup') {
-      await handleSetupCommand(client, roomId, userId);
+    if (text === '!setup' || text === '!setup force') {
+      await handleSetupCommand(client, roomId, userId, text === '!setup force');
       return;
     }
 
