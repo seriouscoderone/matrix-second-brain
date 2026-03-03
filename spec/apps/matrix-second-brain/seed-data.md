@@ -145,7 +145,9 @@ The following records are inserted before the test suite runs (to support featur
 
 ---
 
-## Config (config.yaml) State
+## Config (data/config.yaml) State
+
+The bot stores its runtime config at `data/config.yaml` (relative to the app root, i.e. `/app/data/config.yaml` inside Docker). This file is created by the `!setup` wizard — it does NOT exist on a fresh deploy. The test agent should run `!setup` via Matrix messages to generate it, not write it manually.
 
 After setup wizard completion:
 
