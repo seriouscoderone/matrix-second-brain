@@ -54,6 +54,64 @@ function setupEventHandler(
     const text = (content.body as string)?.trim();
     if (!text) return;
 
+    // !help command — show available commands
+    if (text === '!help') {
+      const isAdmin = userId === env.ADMIN_MATRIX_ID;
+      const cfg = loadConfigYaml();
+      const currentModel = cfg.llm_model
+        || (env.LLM_PROVIDER === 'bedrock' ? env.BEDROCK_MODEL_ID : env.ANTHROPIC_MODEL_ID);
+      const lines = [
+        '**Second Brain Bot**',
+        '',
+        '**Capture** — send any message to your inbox room and the bot will classify and store it:',
+        '`task` `project` `event` `contact` `resource` `note` `shopping` `waiting_for` `someday_maybe` `area`',
+        '',
+        '**Location alerts** — share your live location in Element and get notified when you\'re near a store with pending shopping items.',
+        '',
+        '**Commands:**',
+        '| Command | Description |',
+        '|---|---|',
+        '| `!help` | Show this help message |',
+        '| `!status` | Show bot status and configuration |',
+      ];
+      if (isAdmin) {
+        lines.push(
+          '| `!setup` | Run the first-time setup wizard |',
+          '| `!setup force` | Re-run the setup wizard (overwrites config) |',
+          '| `!model` | Show current LLM model |',
+          '| `!model <id>` | Switch LLM model at runtime |',
+          '',
+          '**Current config:**',
+          `- LLM provider: \`${env.LLM_PROVIDER}\``,
+          `- Model: \`${currentModel}\``,
+          `- Users: ${cfg.users.length > 0 ? cfg.users.join(', ') : '(none — run !setup)'}`,
+          `- Alert radius: ${env.ALERT_RADIUS_METERS}m`,
+          `- Confidence threshold: ${env.CLASSIFICATION_CONFIDENCE_THRESHOLD}`,
+        );
+      }
+      await sendMessage(client, roomId, lines.join('\n'));
+      return;
+    }
+
+    // !status command — quick status check
+    if (text === '!status') {
+      const cfg = loadConfigYaml();
+      const currentModel = cfg.llm_model
+        || (env.LLM_PROVIDER === 'bedrock' ? env.BEDROCK_MODEL_ID : env.ANTHROPIC_MODEL_ID);
+      const uptime = Math.floor((Date.now() - startupTs) / 1000);
+      const hours = Math.floor(uptime / 3600);
+      const mins = Math.floor((uptime % 3600) / 60);
+      const lines = [
+        '**Bot Status**',
+        `- Uptime: ${hours}h ${mins}m`,
+        `- LLM: \`${env.LLM_PROVIDER}\` / \`${currentModel}\``,
+        `- Users: ${cfg.users.length > 0 ? cfg.users.join(', ') : '(none)'}`,
+        `- Space: ${cfg.space.name || '(not configured)'}`,
+      ];
+      await sendMessage(client, roomId, lines.join('\n'));
+      return;
+    }
+
     // !setup command — works in any room
     if (text === '!setup' || text === '!setup force') {
       await handleSetupCommand(client, roomId, userId, text === '!setup force');
