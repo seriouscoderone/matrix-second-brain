@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as path from 'path';
 import * as fs from 'fs';
-import { MatrixClient } from 'matrix-bot-sdk';
+import { MatrixClient, Appservice } from 'matrix-bot-sdk';
 import { createMatrixClient, createAppserviceClient, isAppserviceMode, sendMessage } from './matrixClient';
 import { handleSetupCommand, handleWizardReply, isInSetup } from './setup/wizard';
 import { handleInboxMessage } from './handlers/inbox';
@@ -18,10 +18,14 @@ import { loadConfigYaml, env } from '../config';
 const dataDir = path.join(process.cwd(), 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-function setupEventHandler(client: MatrixClient, startupTs: number): void {
+function setupEventHandler(
+  emitter: MatrixClient | Appservice,
+  client: MatrixClient,
+  startupTs: number,
+): void {
   const db = getDb();
 
-  client.on('room.message', async (roomId: string, event: Record<string, unknown>) => {
+  emitter.on('room.message', async (roomId: string, event: Record<string, unknown>) => {
     // Skip events that predate this bot session (replayed history)
     const eventTs = event.origin_server_ts as number | undefined;
     if (eventTs !== undefined && eventTs < startupTs) return;
@@ -103,7 +107,7 @@ async function main(): Promise<void> {
     // --- Appservice mode: homeserver pushes events to us via HTTP ---
     const { client, appservice } = createAppserviceClient();
 
-    setupEventHandler(client, startupTs);
+    setupEventHandler(appservice, client, startupTs);
     setupCronJobs();
 
     await appservice.begin();
@@ -116,7 +120,7 @@ async function main(): Promise<void> {
     // --- Client mode: bot polls /sync (original behavior) ---
     const client = createMatrixClient();
 
-    setupEventHandler(client, startupTs);
+    setupEventHandler(client, client, startupTs);
     setupCronJobs();
 
     await client.start();
