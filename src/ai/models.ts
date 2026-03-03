@@ -42,6 +42,26 @@ function sortKey(modelId: string): string {
   return digits.map(d => d.padStart(10, '0')).join('-');
 }
 
+// ─── Region Prefix ──────────────────────────────────────────────────────────
+
+// Bedrock ListFoundationModels returns base IDs (e.g. "anthropic.claude-sonnet-4-5-20250929-v1:0")
+// but InvokeModel requires a cross-region inference profile ID (e.g. "us.anthropic.claude-...").
+// Derive the region prefix from AWS_REGION.
+function getRegionPrefix(): string {
+  const region = env.AWS_REGION;
+  if (region.startsWith('us-')) return 'us';
+  if (region.startsWith('eu-')) return 'eu';
+  if (region.startsWith('ap-northeast-1')) return 'jp';
+  if (region.startsWith('ap-')) return 'apac';
+  return 'us'; // default
+}
+
+function toInferenceProfileId(baseModelId: string): string {
+  // If it already has a region prefix, leave it alone
+  if (/^(us|eu|jp|apac|global)\./.test(baseModelId)) return baseModelId;
+  return `${getRegionPrefix()}.${baseModelId}`;
+}
+
 // ─── Discovery ──────────────────────────────────────────────────────────────
 
 export async function listAnthropicModels(forceRefresh = false): Promise<ModelInfo[]> {
@@ -55,15 +75,18 @@ export async function listAnthropicModels(forceRefresh = false): Promise<ModelIn
 
   const models: ModelInfo[] = (response.modelSummaries || [])
     .filter((m: FoundationModelSummary) => m.modelId?.startsWith('anthropic.claude'))
-    .map((m: FoundationModelSummary) => ({
-      modelId: m.modelId!,
-      name: m.modelName || m.modelId!,
-      tier: detectTier(m.modelId!, m.modelName || ''),
-      inputModalities: (m.inputModalities as string[]) || [],
-      outputModalities: (m.outputModalities as string[]) || [],
-      streaming: m.responseStreamingSupported ?? false,
-      active: m.modelLifecycle?.status === 'ACTIVE',
-    }))
+    .map((m: FoundationModelSummary) => {
+      const baseId = m.modelId!;
+      return {
+        modelId: toInferenceProfileId(baseId),
+        name: m.modelName || baseId,
+        tier: detectTier(baseId, m.modelName || ''),
+        inputModalities: (m.inputModalities as string[]) || [],
+        outputModalities: (m.outputModalities as string[]) || [],
+        streaming: m.responseStreamingSupported ?? false,
+        active: m.modelLifecycle?.status === 'ACTIVE',
+      };
+    })
     .sort((a: ModelInfo, b: ModelInfo) => sortKey(a.modelId).localeCompare(sortKey(b.modelId)));
 
   cachedModels = models;
@@ -132,5 +155,6 @@ export function formatModelList(models: ModelInfo[], currentModelId: string): st
   }
 
   lines.push('Use `!model <model-id>` to switch, or `!model latest` for the newest Sonnet.');
+  lines.push('Model IDs include the region prefix (e.g. `us.`) required by Bedrock InvokeModel.');
   return lines.join('\n');
 }
