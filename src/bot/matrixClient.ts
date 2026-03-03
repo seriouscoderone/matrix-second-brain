@@ -28,6 +28,10 @@ export function isAppserviceMode(): boolean {
  * Used when APPSERVICE_REGISTRATION is not set.
  */
 export function createMatrixClient(): MatrixClient {
+  if (!env.MATRIX_BOT_ACCESS_TOKEN) {
+    throw new Error('MATRIX_BOT_ACCESS_TOKEN is required in client mode');
+  }
+
   const storage = new SimpleFsStorageProvider(
     path.join(process.cwd(), 'data', 'bot.json'),
   );
@@ -69,7 +73,7 @@ export function createAppserviceClient(): { client: MatrixClient; appservice: Ap
   });
 
   matrixClient = appservice.botClient;
-  AutojoinRoomsMixin.setupOnClient(matrixClient);
+  AutojoinRoomsMixin.setupOnAppservice(appservice);
 
   return { client: matrixClient, appservice };
 }

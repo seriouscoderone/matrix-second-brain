@@ -11,7 +11,7 @@ dotenv.config();
 const EnvSchema = z.object({
   MATRIX_HOMESERVER_URL: z.string().url(),
   MATRIX_BOT_USER_ID: z.string().startsWith('@'),
-  MATRIX_BOT_ACCESS_TOKEN: z.string().min(1),
+  MATRIX_BOT_ACCESS_TOKEN: z.string().optional(),
   ADMIN_MATRIX_ID: z.string().startsWith('@'),
 
   DATABASE_URL: z.string().url(),
