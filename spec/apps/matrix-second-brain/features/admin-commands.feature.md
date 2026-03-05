@@ -91,14 +91,15 @@ And the bot replies with the env default model ID it will revert to
 And the next LLM call uses the env default (or auto-discovered model)
 
 ### Scenario: Admin lists available Bedrock models
-> The !model list command queries the Bedrock API and shows available models.
+> The !model list command queries the Bedrock API and shows only active, invokable models.
 
 Given I am logged in as the admin user
 And `LLM_PROVIDER=bedrock`
 When I send `!model list`
 Then the bot queries the Bedrock `ListFoundationModels` API filtered by provider "Anthropic"
+And only models with `modelLifecycle.status === 'ACTIVE'` are included (LEGACY models are excluded)
 And the bot replies with models grouped by tier: Opus, Sonnet, Haiku
-And each model shows its model ID and active/inactive status
+And each model shows its inference profile ID (with region prefix, e.g. `us.anthropic.claude-...`)
 And the current model is marked with "<< current"
 
 ### Scenario: !model list is not available for non-Bedrock providers

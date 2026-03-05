@@ -1,7 +1,7 @@
 import { MatrixClient } from 'matrix-bot-sdk';
 import { sendMessage } from '../matrixClient';
 import { createSpace } from '../../matrix/space';
-import { createInboxRoom } from '../../matrix/rooms';
+import { createInboxRoom, addRoomToSpace } from '../../matrix/rooms';
 import { saveConfigYaml, loadConfigYaml, ConfigYaml } from '../../config';
 import { env } from '../../config';
 
@@ -94,31 +94,34 @@ export async function handleWizardReply(
 
     try {
       // Create Space
-      const spaceId = await createSpace(state.spaceName!, {
+      const matrixClientLike = {
         createRoom: (opts: Record<string, unknown>) => (client as unknown as { createRoom(o: unknown): Promise<string> }).createRoom(opts),
-        sendStateEvent: (roomId: string, type: string, content: Record<string, unknown>, stateKey?: string) =>
-          client.sendStateEvent(roomId, type, stateKey ?? '', content),
-        inviteUser: (roomId: string, userId: string) => client.inviteUser(roomId, userId),
-      });
+        sendStateEvent: (rid: string, type: string, content: Record<string, unknown>, stateKey?: string) =>
+          client.sendStateEvent(rid, type, stateKey ?? '', content),
+        inviteUser: (rid: string, uid: string) => client.inviteUser(rid, uid),
+      };
 
-      // Create digest room
+      const spaceId = await createSpace(state.spaceName!, matrixClientLike);
+
+      // Invite users to the Space
+      for (const matrixId of invitedUsers) {
+        await client.inviteUser(matrixId, spaceId);
+      }
+
+      // Create digest room and add it to the Space
       const digestRoomId = await (client as unknown as { createRoom(o: unknown): Promise<string> }).createRoom({
         name: 'digest',
         topic: 'Daily and weekly digests',
         preset: 'private_chat',
         invite: invitedUsers,
       });
+      await addRoomToSpace(spaceId, digestRoomId, matrixClientLike);
 
       // Create inbox rooms for each user
       const inboxRooms: Record<string, string> = {};
       for (const matrixId of invitedUsers) {
         const username = matrixId.split(':')[0].replace('@', '');
-        const inboxRoomId = await createInboxRoom(username, spaceId, [matrixId], {
-          createRoom: (opts: Record<string, unknown>) => (client as unknown as { createRoom(o: unknown): Promise<string> }).createRoom(opts),
-          sendStateEvent: (roomId: string, type: string, content: Record<string, unknown>, stateKey?: string) =>
-            client.sendStateEvent(roomId, type, stateKey ?? '', content),
-          inviteUser: (roomId: string, userId: string) => client.inviteUser(roomId, userId),
-        });
+        const inboxRoomId = await createInboxRoom(username, spaceId, [matrixId], matrixClientLike);
         inboxRooms[username] = inboxRoomId;
       }
 

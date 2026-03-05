@@ -36,9 +36,10 @@ Given I am in the setup wizard at the `invite_users` step
 And the space name is "Family Brain"
 When I send "@bob:localhost"
 Then the bot creates a Matrix Space named "Family Brain"
-And the bot creates a `#digest` room and invites all users
+And the bot invites all users (admin + bob) to the Space
+And the bot creates a `#digest` room, invites all users, and adds it to the Space
 And the bot creates inbox rooms: `#inbox-admin_username` and `#inbox-bob`
-And the bot adds all rooms to the Space
+And the bot adds all inbox rooms to the Space
 And the bot saves `config.yaml` with space ID, room IDs, user list, and default cron schedules
 And the bot replies with a success message listing all created rooms
 And my wizard state is cleared
@@ -48,9 +49,29 @@ And my wizard state is cleared
 
 Given I am in the setup wizard at the `invite_users` step
 When I send "just me"
-Then the bot creates a Space, digest room, and one inbox room for the admin only
+Then the bot creates a Space and invites the admin to it
+And the bot creates a digest room, adds it to the Space
+And the bot creates one inbox room for the admin and adds it to the Space
 And the bot saves `config.yaml` with only the admin in the users list
 And the bot replies with a success message
+
+### Scenario: All rooms appear under the Space in Element
+> Space child/parent events have valid `via` fields so clients render the hierarchy.
+
+Given the setup wizard has completed with Space "Family Brain"
+When I open Element and view the Space
+Then the digest room and all inbox rooms appear nested under the Space
+And each room's `m.space.child` event on the Space has `via: ["<homeserver_domain>"]`
+And each room's `m.space.parent` event has `via: ["<homeserver_domain>"]`
+And the homeserver domain is extracted from the Space ID (e.g. `!abc:example.com` → `example.com`)
+
+### Scenario: Users are invited to the Space itself
+> All users must be members of the Space to see it and its child rooms.
+
+Given the setup wizard creates a Space
+When the wizard finishes
+Then all users in the invite list are invited to the Space (not just to individual rooms)
+And the bot (as Space creator) is already a member without needing an invite
 
 ### Scenario: Non-admin user attempts setup
 > A regular household member tries to run `!setup`.

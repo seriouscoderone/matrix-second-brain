@@ -41,15 +41,18 @@ export async function addRoomToSpace(
   roomId: string,
   client: MatrixClientLike,
 ): Promise<void> {
+  // Extract homeserver from spaceId, e.g. "!abc:example.com" → ["example.com"]
+  const via = [spaceId.split(':').slice(1).join(':')];
+
   // Set m.space.child state event on the space
   await client.sendStateEvent(spaceId, 'm.space.child', {
-    via: [], // Will be populated by homeserver
+    via,
     suggested: false,
   }, roomId);
 
   // Set m.space.parent state event on the room
   await client.sendStateEvent(roomId, 'm.space.parent', {
-    via: [],
+    via,
     canonical: true,
   }, spaceId);
 }

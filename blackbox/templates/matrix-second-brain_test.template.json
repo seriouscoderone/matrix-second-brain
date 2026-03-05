@@ -1,7 +1,7 @@
 {
   "_meta": {
     "suite": "matrix-second-brain",
-    "generated_at": "2026-03-03T17:58:41Z",
+    "generated_at": "2026-03-05T06:23:04Z",
     "schema_version": "1.0",
     "note": "This is a Matrix bot service — no browser UI. The test agent executes scenarios via Matrix API calls (send message, read reply) rather than browser automation. base_url in manifest.json is the Matrix homeserver URL (e.g., http://localhost:8008)."
   },
@@ -827,6 +827,15 @@
           "last_run": null,
           "build_id": null
         },
+        "LEGACY and inactive models are excluded from discovery": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
         "Auto-discovery falls back across tiers": {
           "_type": "scenario",
           "status": "UNTESTED",
@@ -993,6 +1002,24 @@
           "build_id": null
         },
         "Admin chooses \"just me\"": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "All rooms appear under the Space in Element": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Users are invited to the Space itself": {
           "_type": "scenario",
           "status": "UNTESTED",
           "message": null,

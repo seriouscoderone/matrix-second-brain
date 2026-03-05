@@ -99,6 +99,21 @@ Given the following model IDs:
 When the bot classifies each model
 Then the tier matches the expected value
 
+### Scenario: LEGACY and inactive models are excluded from discovery
+> Only models with `modelLifecycle.status === 'ACTIVE'` are returned.
+
+Given Bedrock returns these models:
+  | Model ID | Lifecycle Status |
+  |---|---|
+  | `anthropic.claude-sonnet-4-5-20250929-v1:0` | ACTIVE |
+  | `anthropic.claude-3-5-sonnet-20241022-v2:0` | LEGACY |
+  | `anthropic.claude-3-haiku-20240307-v1:0` | LEGACY |
+  | `anthropic.claude-haiku-4-5-20251001-v1:0` | ACTIVE |
+When the bot lists or discovers models
+Then only the 2 ACTIVE models are included
+And the LEGACY models are not shown in `!model list`
+And the LEGACY models are never auto-selected by `!model latest`
+
 ### Scenario: Auto-discovery falls back across tiers
 > If no Sonnet is available, the bot tries other tiers.
 

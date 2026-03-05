@@ -10,7 +10,6 @@ export interface ModelInfo {
   inputModalities: string[];
   outputModalities: string[];
   streaming: boolean;
-  active: boolean;
 }
 
 // ─── Cache ──────────────────────────────────────────────────────────────────
@@ -74,7 +73,10 @@ export async function listAnthropicModels(forceRefresh = false): Promise<ModelIn
   const response = await client.send(command);
 
   const models: ModelInfo[] = (response.modelSummaries || [])
-    .filter((m: FoundationModelSummary) => m.modelId?.startsWith('anthropic.claude'))
+    .filter((m: FoundationModelSummary) =>
+      m.modelId?.startsWith('anthropic.claude') &&
+      m.modelLifecycle?.status === 'ACTIVE'
+    )
     .map((m: FoundationModelSummary) => {
       const baseId = m.modelId!;
       return {
@@ -84,7 +86,6 @@ export async function listAnthropicModels(forceRefresh = false): Promise<ModelIn
         inputModalities: (m.inputModalities as string[]) || [],
         outputModalities: (m.outputModalities as string[]) || [],
         streaming: m.responseStreamingSupported ?? false,
-        active: m.modelLifecycle?.status === 'ACTIVE',
       };
     })
     .sort((a: ModelInfo, b: ModelInfo) => sortKey(a.modelId).localeCompare(sortKey(b.modelId)));
@@ -99,18 +100,17 @@ export async function listAnthropicModels(forceRefresh = false): Promise<ModelIn
 export async function getLatestModelId(preferredTier: ModelInfo['tier'] = 'sonnet'): Promise<string | null> {
   try {
     const models = await listAnthropicModels();
-    const active = models.filter(m => m.active);
 
     // Pick the latest model in the preferred tier
-    const tierModels = active.filter(m => m.tier === preferredTier);
+    const tierModels = models.filter(m => m.tier === preferredTier);
     if (tierModels.length > 0) {
       return tierModels[tierModels.length - 1].modelId;
     }
 
-    // Fall back to any active model (prefer sonnet > haiku > opus)
+    // Fall back to any model (prefer sonnet > haiku > opus)
     const fallbackOrder: ModelInfo['tier'][] = ['sonnet', 'haiku', 'opus'];
     for (const tier of fallbackOrder) {
-      const fallback = active.filter(m => m.tier === tier);
+      const fallback = models.filter(m => m.tier === tier);
       if (fallback.length > 0) return fallback[fallback.length - 1].modelId;
     }
 
@@ -134,9 +134,8 @@ export function formatModelList(models: ModelInfo[], currentModelId: string): st
     lines.push(`**${tier.charAt(0).toUpperCase() + tier.slice(1)}**`);
     for (const m of tierModels) {
       const isCurrent = m.modelId === currentModelId;
-      const status = m.active ? '' : ' (inactive)';
       const marker = isCurrent ? ' **<< current**' : '';
-      lines.push(`- \`${m.modelId}\`${status}${marker}`);
+      lines.push(`- \`${m.modelId}\`${marker}`);
     }
     lines.push('');
   }
@@ -147,9 +146,8 @@ export function formatModelList(models: ModelInfo[], currentModelId: string): st
     lines.push('**Other**');
     for (const m of unknownModels) {
       const isCurrent = m.modelId === currentModelId;
-      const status = m.active ? '' : ' (inactive)';
       const marker = isCurrent ? ' **<< current**' : '';
-      lines.push(`- \`${m.modelId}\`${status}${marker}`);
+      lines.push(`- \`${m.modelId}\`${marker}`);
     }
     lines.push('');
   }
