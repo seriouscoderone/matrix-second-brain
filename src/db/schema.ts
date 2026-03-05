@@ -11,7 +11,7 @@ import {
 
 // ─── Enums ─────────────────────────────────────────────────────────────────
 
-export const ownerEnum = pgEnum('owner', ['alice', 'bob', 'shared']);
+
 export const inboxStatusEnum = pgEnum('inbox_status', ['new', 'processed', 'archived']);
 export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'done']);
 export const priorityEnum = pgEnum('priority', ['low', 'medium', 'high']);
@@ -40,7 +40,7 @@ export const areas = pgTable('areas', {
   successCriteria: text('success_criteria'),
   reviewFrequency: reviewFrequencyEnum('review_frequency').default('monthly'),
   lastReviewedAt: timestamp('last_reviewed_at'),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
@@ -58,7 +58,7 @@ export const projects = pgTable('projects', {
   matrixRoomId: text('matrix_room_id'),
   areaId: uuid('area_id').references(() => areas.id),
   visibility: visibilityEnum('visibility').default('shared').notNull(),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),
@@ -76,7 +76,7 @@ export const contacts = pgTable('contacts', {
   lastInteractionAt: timestamp('last_interaction_at'),
   followUpDate: timestamp('follow_up_date'),
   notes: text('notes'),
-  owner: ownerEnum('owner').default('shared').notNull(),
+  owner: text('owner').default('shared').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
@@ -90,7 +90,7 @@ export const places = pgTable('places', {
   lon: decimal('lon', { precision: 10, scale: 7 }).notNull(),
   address: text('address'),
   tags: text('tags').array(),
-  owner: ownerEnum('owner').default('shared').notNull(),
+  owner: text('owner').default('shared').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
@@ -107,7 +107,7 @@ export const tasks = pgTable('tasks', {
   dueDate: timestamp('due_date'),
   projectId: uuid('project_id').references(() => projects.id),
   areaId: uuid('area_id').references(() => areas.id),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),
@@ -122,7 +122,7 @@ export const waitingFor = pgTable('waiting_for', {
   followUpDate: timestamp('follow_up_date'),
   contactId: uuid('contact_id').references(() => contacts.id),
   projectId: uuid('project_id').references(() => projects.id),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),
@@ -137,7 +137,7 @@ export const events = pgTable('events', {
   endAt: timestamp('end_at'),
   location: text('location'),
   notes: text('notes'),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),
@@ -168,7 +168,7 @@ export const resources = pgTable('resources', {
   author: text('author'),
   keyTakeaways: text('key_takeaways'),
   tags: text('tags').array(),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),
@@ -183,7 +183,7 @@ export const notes = pgTable('notes', {
   content: text('content').notNull(),
   tags: text('tags').array(),
   projectId: uuid('project_id').references(() => projects.id),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),
@@ -216,7 +216,7 @@ export const shoppingItems = pgTable('shopping_items', {
   status: shoppingStatusEnum('status').default('pending').notNull(),
   placeId: uuid('place_id').references(() => places.id),
   projectId: uuid('project_id').references(() => projects.id),
-  owner: ownerEnum('owner').default('shared').notNull(),
+  owner: text('owner').default('shared').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),
@@ -231,7 +231,7 @@ export const somedayMaybe = pgTable('someday_maybe', {
   category: text('category'),
   reviewDate: timestamp('review_date'),
   tags: text('tags').array(),
-  owner: ownerEnum('owner').notNull(),
+  owner: text('owner').notNull(),
   createdBy: text('created_by').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   matrixMessageId: text('matrix_message_id'),

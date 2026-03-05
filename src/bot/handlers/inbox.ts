@@ -142,8 +142,9 @@ async function processFinalMessage(
   clarificationContext?: PipelineContext,
 ): Promise<void> {
   try {
+    const cfg = loadConfigYaml();
     const result = await processCapturedMessage(
-      content, capturedBy, roomId, db, clarificationContext,
+      content, capturedBy, roomId, db, clarificationContext, cfg.users,
     );
 
     if (result.needsClarification) {
@@ -161,7 +162,6 @@ async function processFinalMessage(
 
     // If a new project room is needed, create it
     if (result.newProjectRoom && result.projectName) {
-      const cfg = loadConfigYaml();
       const members = cfg.users;
       const spaceId = cfg.space.id;
 

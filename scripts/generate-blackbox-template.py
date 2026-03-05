@@ -18,6 +18,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+# Explicit execution order per suite. Features listed here run first (in order),
+# then any remaining features run alphabetically. This lets the test agent
+# execute prerequisites (e.g., setup-wizard) before dependent features.
+EXECUTION_ORDER: dict[str, list[str]] = {
+    "matrix-second-brain": [
+        "setup-wizard",
+        "message-routing",
+        "admin-commands",
+        "model-management",
+        "inbox-message-processing",
+        "clarification-flow",
+        "project-room-messaging",
+        "location-proximity-alerts",
+        "daily-digest",
+        "weekly-review",
+        "enrichment-cron",
+    ],
+}
+
 SCENARIO_PATTERN = re.compile(
     r"^###\s+Scenario(?P<outline>\s+Outline)?:\s+(?P<title>.+)$",
     re.MULTILINE,
@@ -142,23 +161,35 @@ def main():
         except Exception:
             pass
 
+    # Build execution order: explicit order first, then any remaining alphabetically
+    suite_order = EXECUTION_ORDER.get(args.suite, [])
+    all_feature_keys = [f.stem.replace(".feature", "") for f in feature_files]
+    ordered_keys = [k for k in suite_order if k in all_feature_keys]
+    ordered_keys += sorted(k for k in all_feature_keys if k not in ordered_keys)
+
     template = {
         "_meta": {
             "suite": args.suite,
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "schema_version": "1.0",
+            "execution_order": ordered_keys,
             "note": (
                 "This is a Matrix bot service — no browser UI. "
                 "The test agent executes scenarios via Matrix API calls "
                 "(send message, read reply) rather than browser automation. "
-                "base_url in manifest.json is the Matrix homeserver URL (e.g., http://localhost:8008)."
+                "base_url in manifest.json is the Matrix homeserver URL (e.g., http://localhost:8008). "
+                "IMPORTANT: Execute features in the order specified by execution_order — "
+                "setup-wizard must run first as it creates the Space and rooms that other features depend on."
             ),
         },
         app_name: {},
     }
 
-    for feature_file in feature_files:
-        feature_key = feature_file.stem.replace(".feature", "")
+    # Build feature-file lookup
+    feature_file_map = {f.stem.replace(".feature", ""): f for f in feature_files}
+
+    for feature_key in ordered_keys:
+        feature_file = feature_file_map[feature_key]
         parsed = parse_feature_file(feature_file)
 
         if args.preserve_results:

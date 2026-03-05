@@ -14,7 +14,7 @@ Global roles that interact with this application (there is only one app in the s
 
 None. The system has exactly three roles as defined at the suite level. There are no app-specific specializations.
 
-The concept of "owner" exists (`alice | bob | shared`) but this is a data attribute, not a role. It does not grant additional permissions -- it is used for labeling and routing (e.g., showing whose task it is in a digest).
+The concept of "owner" exists (a username or `shared`) but this is a data attribute, not a role. It does not grant additional permissions -- it is used for labeling and routing (e.g., showing whose task it is in a digest).
 
 ## Permission Matrix
 
@@ -173,7 +173,7 @@ The concept of "owner" exists (`alice | bob | shared`) but this is a data attrib
 ## Data-Level Access
 
 ### Ownership Rules
-- **Owner field**: Every primary entity carries an `owner` enum (`alice | bob | shared`). This is assigned by the AI pipeline based on message content and sender identity.
+- **Owner field**: Every primary entity carries an `owner` text field (a username or `shared`). This is assigned by the AI pipeline based on message content, sender identity, and the dynamic user list from `config.yaml`.
 - **Ownership does not restrict access**: There is no row-level security. The Bot reads all records regardless of owner. Digest messages show all records to all users in the shared digest room.
 - **CreatedBy field**: Tracks which Matrix user (by display name) captured the original message. This is informational, not used for access control.
 

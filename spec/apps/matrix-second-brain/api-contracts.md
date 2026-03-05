@@ -173,6 +173,7 @@ function processCapturedMessage(
   matrixRoomId: string,                    // Source room ID
   db: Db,                                  // Database handle
   clarificationContext?: PipelineContext,   // Merged context for clarification replies
+  users?: string[],                        // Dynamic user list from config.yaml
 ): Promise<PipelineResult>;
 
 interface PipelineResult {
@@ -181,7 +182,7 @@ interface PipelineResult {
   recordId: string;               // UUID of inserted record
   needsClarification: boolean;    // True = ask follow-up questions
   clarifyingQuestions: string[];   // Questions (if needsClarification)
-  owner: 'alice' | 'bob' | 'shared';
+  owner: string;                  // Username or 'shared'
   createdBy: string;
   newProjectRoom?: boolean;       // True = create Matrix room
   projectName?: string;           // Name for project room
@@ -381,7 +382,7 @@ function loadContext(db: NodePgDatabase<typeof schema>): Promise<string>;
 | `insertTask(db, task)` | `NewTask` | `Task` | Insert a new task |
 | `getTasksDueToday(db)` | none | `Task[]` | Tasks with dueDate = today |
 | `getOverdueTasks(db)` | none | `Task[]` | Tasks with dueDate < now and status != "done" |
-| `getTasksByOwner(db, owner)` | `owner` enum | `Task[]` | Tasks filtered by owner |
+| `getTasksByOwner(db, owner)` | `string` | `Task[]` | Tasks filtered by owner |
 
 ### Project Queries (`src/db/queries/projects.ts`)
 
@@ -462,7 +463,7 @@ function loadContext(db: NodePgDatabase<typeof schema>): Promise<string>;
   confidence: number;           // 0.0 to 1.0
   needsClarification: boolean;
   clarifyingQuestions: string[];
-  owner: 'alice' | 'bob' | 'shared';
+  owner: string;                    // Username or 'shared'
   createdBy: string;
   fields: Record<string, unknown>;  // Category-specific fields
 }

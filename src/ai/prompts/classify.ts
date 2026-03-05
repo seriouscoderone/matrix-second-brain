@@ -8,15 +8,16 @@ export const ClassificationSchema = z.object({
   confidence: z.number().min(0).max(1),
   needsClarification: z.boolean(),
   clarifyingQuestions: z.array(z.string()).default([]),
-  owner: z.enum(['alice', 'bob', 'shared']),
+  owner: z.string(),
   createdBy: z.string(),
   fields: z.record(z.unknown()),
 });
 
 export type Classification = z.infer<typeof ClassificationSchema>;
 
-export function buildClassifyPrompt(context: string): string {
-  return `You are an intelligent inbox processor for a GTD (Getting Things Done) second brain system used by a household (Alice and Bob).
+export function buildClassifyPrompt(context: string, users: string[] = []): string {
+  const userList = users.length > 0 ? users.join(', ') : 'the household members';
+  return `You are an intelligent inbox processor for a GTD (Getting Things Done) second brain system used by a household (${userList}).
 
 Your job is to classify a captured message into exactly ONE of these categories and extract structured fields.
 
@@ -77,7 +78,7 @@ Return ONLY valid JSON matching this exact structure (no markdown, no explanatio
   "confidence": <0.0 to 1.0>,
   "needsClarification": <true if the intent is ambiguous>,
   "clarifyingQuestions": ["<question1>", ...],
-  "owner": "<alice|bob|shared>",
+  "owner": "<username|shared>",
   "createdBy": "<the capturedBy value provided>",
   "fields": { <extracted fields per category> }
 }`;

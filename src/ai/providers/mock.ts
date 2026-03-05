@@ -5,7 +5,7 @@ interface MockClassification {
   confidence: number;
   needsClarification: boolean;
   clarifyingQuestions: string[];
-  owner: 'alice' | 'bob' | 'shared';
+  owner: string;
   createdBy: string;
   fields: Record<string, unknown>;
 }
@@ -126,7 +126,7 @@ function buildMockFields(category: string, content: string): Record<string, unkn
   }
 }
 
-function ownerForCategory(category: string): 'alice' | 'bob' | 'shared' {
+function ownerForCategory(category: string): string {
   if (['shopping', 'contact', 'project'].includes(category)) return 'shared';
   return 'alice';
 }

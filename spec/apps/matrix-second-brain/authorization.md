@@ -117,7 +117,7 @@ Since there are no API endpoints, authorization is enforced at internal service 
 
 ### Ownership Model
 
-The `owner` field (`alice | bob | shared`) is an informational attribute, not an access control mechanism:
+The `owner` field (a username or `shared`) is an informational attribute, not an access control mechanism:
 
 | Aspect | Behavior |
 |---|---|
@@ -186,7 +186,7 @@ There is no mechanism to grant temporary elevated access.
   +-- FK constraints enforce referential integrity
   +-- NOT NULL constraints enforce required fields
   +-- UNIQUE constraint on notes.zettel_id
-  +-- Enum constraints on status, priority, etc.
+  +-- Enum constraints on status, priority, context, etc.
 ```
 
 The security model is intentionally minimal, appropriate for a trusted-household deployment where all users are known and trust each other. The primary risk mitigations are:

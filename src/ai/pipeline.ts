@@ -19,7 +19,7 @@ export interface PipelineResult {
   recordId: string;
   needsClarification: boolean;
   clarifyingQuestions: string[];
-  owner: 'alice' | 'bob' | 'shared';
+  owner: string;
   createdBy: string;
   newProjectRoom?: boolean;
   projectName?: string;
@@ -76,7 +76,7 @@ function generateZettelId(): string {
 async function writeTask(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.tasks).values({
@@ -98,7 +98,7 @@ async function writeTask(
 async function writeProject(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.projects).values({
@@ -116,7 +116,7 @@ async function writeProject(
 async function writeWaitingFor(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.waitingFor).values({
@@ -132,7 +132,7 @@ async function writeWaitingFor(
 async function writeEvent(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const startAt = parseDate(fields.startAt) ?? new Date();
@@ -151,7 +151,7 @@ async function writeEvent(
 async function writeContact(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.contacts).values({
@@ -170,7 +170,7 @@ async function writeContact(
 async function writeResource(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.resources).values({
@@ -192,7 +192,7 @@ async function writeResource(
 async function writeNote(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const tags = Array.isArray(fields.tags) ? fields.tags.map(String) : [];
@@ -210,7 +210,7 @@ async function writeNote(
 async function writeShopping(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.shoppingItems).values({
@@ -228,7 +228,7 @@ async function writeShopping(
 async function writeSomedayMaybe(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.somedayMaybe).values({
@@ -245,7 +245,7 @@ async function writeSomedayMaybe(
 async function writeArea(
   db: Db,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   const [record] = await db.insert(schema.areas).values({
@@ -286,7 +286,7 @@ async function writeRecord(
   db: Db,
   category: string,
   fields: Record<string, unknown>,
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,
   createdBy: string,
 ): Promise<{ id: string; title: string }> {
   switch (category) {
@@ -312,6 +312,7 @@ export async function processCapturedMessage(
   matrixRoomId: string,
   db: Db,
   clarificationContext?: PipelineContext,
+  users?: string[],
 ): Promise<PipelineResult> {
   const provider = createProvider();
 
@@ -357,7 +358,7 @@ export async function processCapturedMessage(
 
   // Stage 3: Classify + extract fields
   const classifyResponse = await provider.complete(
-    buildClassifyPrompt(dbContext),
+    buildClassifyPrompt(dbContext, users),
     buildClassifyUserMessage(messageToProcess, capturedBy),
   );
 

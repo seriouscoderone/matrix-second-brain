@@ -35,7 +35,7 @@ export async function getOverdueTasks(db: Db): Promise<Task[]> {
     );
 }
 
-export async function getTasksByOwner(db: Db, owner: 'alice' | 'bob' | 'shared'): Promise<Task[]> {
+export async function getTasksByOwner(db: Db, owner: string): Promise<Task[]> {
   return db
     .select()
     .from(tasks)

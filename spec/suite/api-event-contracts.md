@@ -208,7 +208,7 @@ interface PipelineResult {
   recordId: string;               // UUID of the inserted DB record
   needsClarification: boolean;    // True if pipeline is requesting follow-up
   clarifyingQuestions: string[];   // Questions to ask the user (if needsClarification)
-  owner: 'alice' | 'bob' | 'shared';
+  owner: string;                 // Username or 'shared'
   createdBy: string;
   newProjectRoom?: boolean;       // True if a Matrix room should be created
   projectName?: string;           // Name for the new project room
@@ -226,7 +226,7 @@ The LLM must return JSON conforming to `ClassificationSchema` (Zod-validated):
   confidence: number,           // 0.0 to 1.0
   needsClarification: boolean,
   clarifyingQuestions: string[], // Empty array if no clarification needed
-  owner: 'alice' | 'bob' | 'shared',
+  owner: string,                // Username or 'shared'
   createdBy: string,            // The capturedBy value passed through
   fields: Record<string, unknown>  // Category-specific extracted fields
 }

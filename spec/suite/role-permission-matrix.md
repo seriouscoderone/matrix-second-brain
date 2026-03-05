@@ -12,7 +12,7 @@ This system has no traditional web-based authentication or user management. Iden
 
 ### Notes on the `owner` model
 
-The system does not have fine-grained per-user permissions. Instead, every record carries an `owner` field (`alice | bob | shared`). The owner field is assigned by the AI pipeline based on message content and sender. There is no enforcement preventing one user from reading records owned by another -- the database has no row-level security. The `owner` field is used for:
+The system does not have fine-grained per-user permissions. Instead, every record carries an `owner` text field set to a username (e.g., `alice`, `joseph`) or `shared`. The owner is assigned by the AI pipeline based on message content, sender, and the dynamic user list from `config.yaml`. There is no enforcement preventing one user from reading records owned by another -- the database has no row-level security. The `owner` field is used for:
 - Routing digest information (e.g., showing a user their own tasks)
 - Proximity alerts (routed to the user who sent the location event)
 - Display labeling (showing who a task belongs to)
@@ -139,7 +139,7 @@ Bot (System)
 
 There is no formal role inheritance mechanism. The Admin role is a superset of HouseholdMember in terms of capabilities. The Bot role is a system-level actor that executes on behalf of human users.
 
-Custom roles are not supported. The `owner` enum is hardcoded to `alice | bob | shared`.
+Custom roles are not supported. The `owner` field is a dynamic text value derived from the user list in `config.yaml`.
 
 ---
 

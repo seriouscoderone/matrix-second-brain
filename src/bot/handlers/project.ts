@@ -27,7 +27,7 @@ export async function handleProjectMessage(
     status: 'pending',
     priority: 'medium',
     projectId: project.id,
-    owner: (project.owner === 'shared' ? 'shared' : username === 'alice' ? 'alice' : 'bob') as 'alice' | 'bob' | 'shared',
+    owner: project.owner === 'shared' ? 'shared' : username,
     createdBy: username,
     matrixMessageId: eventId,
   });
