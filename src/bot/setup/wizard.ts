@@ -101,7 +101,7 @@ export async function handleWizardReply(
         inviteUser: (rid: string, uid: string) => client.inviteUser(rid, uid),
       };
 
-      const spaceId = await createSpace(state.spaceName!, matrixClientLike, userId);
+      const spaceId = await createSpace(state.spaceName!, matrixClientLike, userId, env.MATRIX_BOT_USER_ID);
 
       // Invite users to the Space
       for (const matrixId of invitedUsers) {

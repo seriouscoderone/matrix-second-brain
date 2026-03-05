@@ -5,7 +5,12 @@ export async function createSpace(
   name: string,
   client: MatrixClientLike,
   adminUserId?: string,
+  botUserId?: string,
 ): Promise<string> {
+  const users: Record<string, number> = {};
+  if (botUserId) users[botUserId] = 100;
+  if (adminUserId) users[adminUserId] = 100;
+
   const spaceId = await client.createRoom({
     name,
     topic: `${name} — Second Brain Space`,
@@ -17,7 +22,7 @@ export async function createSpace(
         'm.room.name': 50,
         'm.room.topic': 50,
       },
-      ...(adminUserId ? { users: { [adminUserId]: 100 } } : {}),
+      ...(Object.keys(users).length > 0 ? { users } : {}),
     },
   });
 
