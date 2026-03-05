@@ -4,6 +4,7 @@ import { addRoomToSpace } from './rooms';
 export async function createSpace(
   name: string,
   client: MatrixClientLike,
+  adminUserId?: string,
 ): Promise<string> {
   const spaceId = await client.createRoom({
     name,
@@ -16,6 +17,7 @@ export async function createSpace(
         'm.room.name': 50,
         'm.room.topic': 50,
       },
+      ...(adminUserId ? { users: { [adminUserId]: 100 } } : {}),
     },
   });
 

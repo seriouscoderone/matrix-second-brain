@@ -73,6 +73,15 @@ When the wizard finishes
 Then all users in the invite list are invited to the Space (not just to individual rooms)
 And the bot (as Space creator) is already a member without needing an invite
 
+### Scenario: Admin gets power level 100 on the Space
+> The admin user is granted full control of the Space at creation time.
+
+Given the admin user runs the setup wizard
+When the Space is created
+Then the admin user has power level 100 in the Space
+And the bot (as room creator) also has power level 100
+And the admin can rename the Space, manage rooms, and change settings
+
 ### Scenario: Non-admin user attempts setup
 > A regular household member tries to run `!setup`.
 

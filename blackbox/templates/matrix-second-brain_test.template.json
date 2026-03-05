@@ -1,7 +1,7 @@
 {
   "_meta": {
     "suite": "matrix-second-brain",
-    "generated_at": "2026-03-05T06:23:04Z",
+    "generated_at": "2026-03-05T13:55:24Z",
     "schema_version": "1.0",
     "note": "This is a Matrix bot service — no browser UI. The test agent executes scenarios via Matrix API calls (send message, read reply) rather than browser automation. base_url in manifest.json is the Matrix homeserver URL (e.g., http://localhost:8008)."
   },
@@ -1020,6 +1020,15 @@
           "build_id": null
         },
         "Users are invited to the Space itself": {
+          "_type": "scenario",
+          "status": "UNTESTED",
+          "message": null,
+          "error_detail": null,
+          "steps_to_reproduce": [],
+          "last_run": null,
+          "build_id": null
+        },
+        "Admin gets power level 100 on the Space": {
           "_type": "scenario",
           "status": "UNTESTED",
           "message": null,
